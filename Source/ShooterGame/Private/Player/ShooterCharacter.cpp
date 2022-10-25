@@ -9,6 +9,7 @@
 #include "Animation/AnimInstance.h"
 #include "Sound/SoundNodeLocalPlayer.h"
 #include "AudioThread.h"
+#include "..\..\Public\Player\ShooterCharacter.h"
 
 static int32 NetVisualizeRelevancyTestPoints = 0;
 FAutoConsoleVariableRef CVarNetVisualizeRelevancyTestPoints(
@@ -67,6 +68,10 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
+
+	bJetpackOn = false;
+	JetpackVelocity = 500.0f;
+	
 }
 
 void AShooterCharacter::PostInitializeComponents()
@@ -884,6 +889,12 @@ void AShooterCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAction("Run", IE_Pressed, this, &AShooterCharacter::OnStartRunning);
 	PlayerInputComponent->BindAction("RunToggle", IE_Pressed, this, &AShooterCharacter::OnStartRunningToggle);
 	PlayerInputComponent->BindAction("Run", IE_Released, this, &AShooterCharacter::OnStopRunning);
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	//Bind new input actions
+	PlayerInputComponent->BindAction("Teleport", IE_Pressed, this, &AShooterCharacter::OnTeleport);
+
+	PlayerInputComponent->BindAction("Ability1", IE_Pressed, this, &AShooterCharacter::OnTimeRewindStart);
 }
 
 
@@ -1057,6 +1068,112 @@ void AShooterCharacter::OnStopRunning()
 	SetRunning(false, false);
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// NEW FUNCTIONALITIES
+
+
+// REDEFINE JUMP INPUT FOR JETPACK AND OTHER
+void AShooterCharacter::CheckJumpInput(float DeltaTime) 
+{
+	JumpCurrentCountPreJump = JumpCurrentCount;
+
+	UShooterCharacterMovement* ShooterCharacterMovement = 
+		Cast<UShooterCharacterMovement>(GetCharacterMovement());
+
+	if (ShooterCharacterMovement)
+	{
+		if (bJetpackOn) {
+			ShooterCharacterMovement->DoJetpack();
+			UE_LOG(LogTemp, Warning, TEXT("DOING JETPACK"));
+		}
+		else if(bPressedJump){
+
+			// If this is the first jump and we're already falling,
+			// then increment the JumpCount to compensate.
+			const bool bFirstJump = JumpCurrentCount == 0;
+			if (bFirstJump && ShooterCharacterMovement->IsFalling())
+			{
+				JumpCurrentCount++;
+			}
+
+			const bool bDidJump = CanJump() && ShooterCharacterMovement->DoJump(bClientUpdating);
+			if (bDidJump)
+			{
+				// Transition from not (actively) jumping to jumping.
+				if (!bWasJumping)
+				{
+					JumpCurrentCount++;
+					JumpForceTimeRemaining = GetJumpMaxHoldTime();
+					OnJumped();
+				}
+			}
+
+				bWasJumping = bDidJump;
+		}
+
+	}
+}
+
+void AShooterCharacter::OnTeleport()
+{
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+	if (MyPC && MyPC->IsGameInputAllowed())
+	{
+		bPressedTeleport = true;
+	}
+}
+
+bool AShooterCharacter::CheckTeleportInput() {
+	return bPressedTeleport;
+}
+
+void AShooterCharacter::OnTeleportDone() {
+	bPressedTeleport = false;
+}
+
+void AShooterCharacter::OnJetpackStart()
+{
+	bJetpackOn = true;
+
+	//Set Movement mode and Walk (falling) lateral speed
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+	GetCharacterMovement()->AirControl = 1;
+	UE_LOG(LogTemp, Warning, TEXT("JETPACK START"));
+	//TODO (Decrease jetpack bar, animation & sound)
+}
+
+void AShooterCharacter::OnJetpackStop()
+{
+	bJetpackOn = false;
+	UE_LOG(LogTemp, Warning, TEXT("JETPACK STOP"));
+	//TODO (Decrease jetpack bar, animation & sound)
+}
+
+bool AShooterCharacter::CanJetpack() {
+	return true;
+}
+
+
+void AShooterCharacter::OnWallJump()
+{
+	//TODO
+}
+
+void AShooterCharacter::OnWallRunStart()
+{
+	//TODO
+}
+
+void AShooterCharacter::OnWallRunStop()
+{
+	//TODO
+}
+
+void AShooterCharacter::OnTimeRewindStart()
+{
+	//TODO
+}
+
 bool AShooterCharacter::IsRunning() const
 {
 	if (!GetCharacterMovement())
@@ -1156,13 +1273,19 @@ void AShooterCharacter::OnStartJump()
 	if (MyPC && MyPC->IsGameInputAllowed())
 	{
 		bPressedJump = true;
+		if (JumpCurrentCount > 0 && CanJetpack())
+		{
+			OnJetpackStart();
+		}
 	}
 }
 
 void AShooterCharacter::OnStopJump()
 {
+	if (bJetpackOn)
+		OnJetpackStop();
 	bPressedJump = false;
-	StopJumping();
+ 	StopJumping();
 }
 
 //////////////////////////////////////////////////////////////////////////

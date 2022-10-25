@@ -201,6 +201,40 @@ class AShooterCharacter : public ACharacter
 	/** player released run action */
 	void OnStopRunning();
 
+	/////////////////////////////////////////////////////////////////////////
+	// ADDED ABILITIES
+
+	//Override of Jump input function
+	virtual void CheckJumpInput(float DeltaTime) override;
+
+	/** player pressed teleport action */
+
+	bool CheckTeleportInput();
+
+	void OnTeleport();
+
+	void OnTeleportDone();
+
+	/** player pressed jump action in middle-air*/
+
+	void OnJetpackStart();
+
+	void OnJetpackStop();
+
+	bool CanJetpack();
+
+	/** player pressed jump action in middle-air and near a wall */
+	void OnWallJump();
+
+	/** player pressed jump action while sticking to a wall */
+	void OnWallRunStart();
+
+	/** wall run stops by time */
+	void OnWallRunStop();
+
+	/** player pressed time rewind button */
+	void OnTimeRewindStart();
+
 	//////////////////////////////////////////////////////////////////////////
 	// Reading data
 
@@ -407,6 +441,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = Health)
 	float Health;
 
+	// Jetpack max velocity
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	float JetpackVelocity;
+
 	/** Take damage, handle death */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
 
@@ -434,6 +472,9 @@ public:
 
 	/** Called on the actor right before replication occurs */
 	virtual void PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker) override;
+
+
+
 protected:
 	/** notification when killed, for both the server and client. */
 	virtual void OnDeath(float KillingDamage, struct FDamageEvent const& DamageEvent, class APawn* InstigatingPawn, class AActor* DamageCauser);
@@ -481,6 +522,20 @@ protected:
 
 	/** Builds list of points to check for pausing replication for a connection*/
 	void BuildPauseReplicationCheckPoints(TArray<FVector>& RelevancyCheckPoints);
+
+	///////////////////////////////////////////////////////////
+	// Useful variables for added abilities
+
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+	uint32 bPressedTeleport : 1;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+	uint32 bJetpackOn : 1;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+	uint32 bPressedAbility1 : 1;
+
+
 
 protected:
 	/** Returns Mesh1P subobject **/
