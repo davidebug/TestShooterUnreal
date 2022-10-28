@@ -141,6 +141,13 @@ void UShooterCharacterMovement::execSetJetpack(bool bJetpackOn)
 	if (ShooterCharacterOwner) {
 		ShooterCharacterOwner->bJetpackOn = bJetpackOn;
 	}
+	if (bJetpackOn) {
+		SetMovementMode(MOVE_Falling);
+		AirControl = 1;
+	}
+	else {
+		AirControl = 0.05f;
+	}
 }
 
 

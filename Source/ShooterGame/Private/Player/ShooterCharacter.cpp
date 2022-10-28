@@ -1117,9 +1117,14 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 void AShooterCharacter::OnTeleportPressed()
 {
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+	if (ShooterCharMovement && !HasAuthority()) {
+		UE_LOG(LogTemp, Warning, TEXT("TELEPORT NOT MINE START"));
+		ShooterCharMovement->ServerSetTeleportRPC(true);
+	}
+
 	if (MyPC && MyPC->IsGameInputAllowed())
 	{
-		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 		if (ShooterCharMovement) {
 			ShooterCharMovement->SetTeleport(true);
 		}
@@ -1136,47 +1141,48 @@ bool AShooterCharacter::CheckTeleportInput() {
 }
 
 void AShooterCharacter::OnTeleportDone() {
-	bPressedTeleport = false;
+	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+	if (ShooterCharMovement) {
+
+		if (!HasAuthority())
+			ShooterCharMovement->ServerSetTeleportRPC(false);
+
+		ShooterCharMovement->SetTeleport(false);
+	}
 	//gestire animazioni il suono ecc
 }
 
 void AShooterCharacter::OnJetpackStart()
 {
-	bJetpackOn = true;
+	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+	if (ShooterCharMovement) {
 
-	//Set Movement mode and Walk (falling) lateral speed
-	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-	GetCharacterMovement()->AirControl = 1;
+		if (!HasAuthority())
+			ShooterCharMovement->ServerSetJetpackRPC(true);
+
+		ShooterCharMovement->SetJetpack(true);
+	}
+
 	UE_LOG(LogTemp, Warning, TEXT("JETPACK START"));
 	//TODO (Decrease jetpack bar, animation & sound)
 }
 
 void AShooterCharacter::OnJetpackStop()
 {
-	bJetpackOn = false;
-	GetCharacterMovement()->AirControl = 0.05f;
+	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+	if (ShooterCharMovement) {
+
+		if (!HasAuthority())
+			ShooterCharMovement->ServerSetJetpackRPC(false);
+
+		ShooterCharMovement->SetJetpack(false);
+	}
 	UE_LOG(LogTemp, Warning, TEXT("JETPACK STOP"));
 	//TODO (Decrease jetpack bar, animation & sound)
 }
 
 bool AShooterCharacter::CanJetpack() {
 	return true;
-}
-
-
-void AShooterCharacter::OnWallJump()
-{
-	//TODO
-}
-
-void AShooterCharacter::OnWallRunStart()
-{
-	//TODO
-}
-
-void AShooterCharacter::OnWallRunStop()
-{
-	//TODO
 }
 
 void AShooterCharacter::OnTimeRewindStart()

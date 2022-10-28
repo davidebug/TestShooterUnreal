@@ -223,15 +223,6 @@ class AShooterCharacter : public ACharacter
 
 	bool CanJetpack();
 
-	/** player pressed jump action in middle-air and near a wall */
-	void OnWallJump();
-
-	/** player pressed jump action while sticking to a wall */
-	void OnWallRunStart();
-
-	/** wall run stops by time */
-	void OnWallRunStop();
-
 	/** player pressed time rewind button */
 	void OnTimeRewindStart();
 
