@@ -892,7 +892,7 @@ void AShooterCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	//Bind new input actions
-	PlayerInputComponent->BindAction("Teleport", IE_Pressed, this, &AShooterCharacter::OnTeleport);
+	PlayerInputComponent->BindAction("Teleport", IE_Pressed, this, &AShooterCharacter::OnTeleportPressed);
 
 	PlayerInputComponent->BindAction("Ability1", IE_Pressed, this, &AShooterCharacter::OnTimeRewindStart);
 }
@@ -1114,21 +1114,30 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 	}
 }
 
-void AShooterCharacter::OnTeleport()
+void AShooterCharacter::OnTeleportPressed()
 {
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 	if (MyPC && MyPC->IsGameInputAllowed())
 	{
-		bPressedTeleport = true;
+		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+		if (ShooterCharMovement) {
+			ShooterCharMovement->SetTeleport(true);
+		}
 	}
+	//gestire animazioni il suono ecc
 }
 
 bool AShooterCharacter::CheckTeleportInput() {
+	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+	if (bPressedTeleport && ShooterCharMovement)
+		ShooterCharMovement->DoTeleport();
+
 	return bPressedTeleport;
 }
 
 void AShooterCharacter::OnTeleportDone() {
 	bPressedTeleport = false;
+	//gestire animazioni il suono ecc
 }
 
 void AShooterCharacter::OnJetpackStart()
@@ -1145,6 +1154,7 @@ void AShooterCharacter::OnJetpackStart()
 void AShooterCharacter::OnJetpackStop()
 {
 	bJetpackOn = false;
+	GetCharacterMovement()->AirControl = 0.05f;
 	UE_LOG(LogTemp, Warning, TEXT("JETPACK STOP"));
 	//TODO (Decrease jetpack bar, animation & sound)
 }

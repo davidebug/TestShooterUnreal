@@ -211,7 +211,7 @@ class AShooterCharacter : public ACharacter
 
 	bool CheckTeleportInput();
 
-	void OnTeleport();
+	void OnTeleportPressed();
 
 	void OnTeleportDone();
 
@@ -441,9 +441,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = Health)
 	float Health;
 
-	// Jetpack max velocity
+	///////////////////////////////////////////////////////////
+	// Useful variables for added abilities
+
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		uint32 bPressedTeleport : 1;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		uint32 bJetpackOn : 1;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		uint32 bPressedAbility1 : 1;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	float JetpackVelocity;
+		float JetpackVelocity;
 
 	/** Take damage, handle death */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
@@ -523,17 +534,6 @@ protected:
 	/** Builds list of points to check for pausing replication for a connection*/
 	void BuildPauseReplicationCheckPoints(TArray<FVector>& RelevancyCheckPoints);
 
-	///////////////////////////////////////////////////////////
-	// Useful variables for added abilities
-
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-	uint32 bPressedTeleport : 1;
-
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-	uint32 bJetpackOn : 1;
-
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-	uint32 bPressedAbility1 : 1;
 
 
 
