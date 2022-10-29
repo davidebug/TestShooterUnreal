@@ -1152,9 +1152,7 @@ void AShooterCharacter::OnJetpackStop()
 {
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
-
 		ShooterCharMovement->SetJetpack(false);
-
 	}
 	UE_LOG(LogTemp, Warning, TEXT("JETPACK STOP"));
 	//TODO (Decrease jetpack bar, animation & sound)

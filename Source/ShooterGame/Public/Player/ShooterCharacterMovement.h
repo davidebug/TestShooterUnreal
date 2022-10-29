@@ -28,36 +28,18 @@ public:
 		/* Sets the Jetpack boolean and recalls it on the server */
 		void SetJetpack(bool bJetpackOn);
 
-		/* Sets the Jetpack boolean */
-		void execSetJetpack(bool bJetpackOn);
-
 		/* Executes the jetpack locally */
 		virtual bool DoJetpack();
 
 	UFUNCTION(BlueprintCallable)
-		/* Sets the teleport boolean and calls the teleport */
-		void SetTeleport(bool bTeleportInput);
 
 		/* Executes the teleport locally */
 		virtual bool DoTeleport();
 
-
-#pragma region Abilities RPCs
-
-
-	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
-		void ServerSetJetpackRPC(bool bJetpackOn);
-
-	UFUNCTION(Client, Reliable, BlueprintCallable)
-		void ClientSetJetpackRPC(bool bJetpackOn);
-
-
-#pragma endregion
-
 };
 
 
-#pragma region NetworkPredictionClient
+#pragma region NetworkPrediction
 
 class FNetworkPredictionData_Client_ShooterCharacter : public FNetworkPredictionData_Client_Character {
 
