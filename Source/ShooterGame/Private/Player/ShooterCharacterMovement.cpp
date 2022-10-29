@@ -35,17 +35,6 @@ float UShooterCharacterMovement::GetMaxSpeed() const
 	return MaxSpeed;
 }
 
-//Overrided function for added inputs checking
-void UShooterCharacterMovement::ControlledCharacterMove(const FVector& InputVector, float DeltaSeconds) {
-
-	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
-	ShooterCharacterOwner->CheckTeleportInput();
-
-	Super::ControlledCharacterMove(InputVector, DeltaSeconds);
-
-
-
-}
 
 
 ///////////////////////////////////////////
@@ -56,8 +45,6 @@ bool UShooterCharacterMovement::DoTeleport()
 	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
 
 	if (ShooterCharacterOwner) {
-
-		ShooterCharacterOwner->OnTeleportDone();
 
 		//Teleport at fixed distance
 		FVector NewLocation = ShooterCharacterOwner->GetActorLocation();
@@ -70,8 +57,6 @@ bool UShooterCharacterMovement::DoTeleport()
 		if (ShooterCharacterOwner->TeleportTo(NewLocation,
 			ShooterCharacterOwner->GetActorRotation()))
 			return true;
-
-		
 	}
 
 	return false;
@@ -80,19 +65,8 @@ bool UShooterCharacterMovement::DoTeleport()
 
 void UShooterCharacterMovement::SetTeleport(bool bTeleportInput)
 {
-	execSetTeleport(bTeleportInput);
+	
 
-	if (!GetOwner() || !GetPawnOwner())
-		return;
-
-	if (!GetOwner()->HasAuthority() && GetPawnOwner()->IsLocallyControlled())
-	{
-		ServerSetTeleportRPC(bTeleportInput);
-	}
-	else if (GetOwner()->HasAuthority() && !GetPawnOwner()->IsLocallyControlled())
-	{
-		ClientSetTeleportRPC(bTeleportInput);
-	}
 
 }
 
@@ -121,20 +95,17 @@ void UShooterCharacterMovement::SetJetpack(bool bJetpackOn)
 
 	if (!GetOwner()->HasAuthority() && GetPawnOwner()->IsLocallyControlled())
 	{
+		
 		ServerSetJetpackRPC(bJetpackOn);
 	}
 	else if (GetOwner()->HasAuthority() && !GetPawnOwner()->IsLocallyControlled())
 	{
+		
 		ClientSetJetpackRPC(bJetpackOn);
 	}
 
 }
 
-
-
-#pragma region Abilities RPCs
-
-/// JETPACK RPCs ////
 void UShooterCharacterMovement::execSetJetpack(bool bJetpackOn)
 {
 	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
@@ -150,6 +121,35 @@ void UShooterCharacterMovement::execSetJetpack(bool bJetpackOn)
 	}
 }
 
+//////////////////////////////////////
+// UNPACKING Method
+
+void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
+{
+	Super::UpdateFromCompressedFlags(Flags);
+
+	// Unpack the SavedMove arrived
+	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(CharacterOwner);
+	ShooterCharacter->bPressedTeleport = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_0) != 0);
+	ShooterCharacter->bJetpackOn = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_1) != 0);
+
+	if (CharacterOwner->GetLocalRole() == ROLE_Authority)
+	{
+		//Applies the abilities contained in the move
+		const bool bPressedTeleport = ShooterCharacter->bPressedTeleport;
+		if (bPressedTeleport) {
+			DoTeleport();
+			ShooterCharacter->OnTeleportTriggered();
+		}
+
+	}
+
+}
+
+
+#pragma region Abilities RPCs
+
+/// JETPACK RPCs ////
 
 void UShooterCharacterMovement::ClientSetJetpackRPC_Implementation(bool bJetpackOn)
 {
@@ -167,33 +167,8 @@ void UShooterCharacterMovement::ServerSetJetpackRPC_Implementation(bool bJetpack
 }
 
 
-/// TELEPORT RPCs ///
-void UShooterCharacterMovement::execSetTeleport(bool bTeleportInput)
-{
-	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
-	if (ShooterCharacterOwner) {
-		ShooterCharacterOwner->bPressedTeleport = bTeleportInput;
-	}
-}
-
-void UShooterCharacterMovement::ClientSetTeleportRPC_Implementation(bool bTeleportInput)
-{
-	execSetTeleport(bTeleportInput);
-}
-
-bool UShooterCharacterMovement::ServerSetTeleportRPC_Validate(bool bTeleportInput)
-{
-	return true;
-}
-
-void UShooterCharacterMovement::ServerSetTeleportRPC_Implementation(bool bTeleportInput)
-{
-	execSetTeleport(bTeleportInput);
-}
-
 
 #pragma endregion
-
 
 
 
@@ -201,9 +176,12 @@ void UShooterCharacterMovement::ServerSetTeleportRPC_Implementation(bool bTelepo
 
 ////////  NETWORK PREDICTION DATA CLIENT ////////
 
-
 FNetworkPredictionData_Client* UShooterCharacterMovement::GetPredictionData_Client() const
 {
+
+	checkSlow(CharacterOwner != NULL);
+
+	// This method has been changed to return a ShooterCharacter Client
 	if (ClientPredictionData == nullptr)
 	{
 		UShooterCharacterMovement* MutableThis = const_cast<UShooterCharacterMovement*>(this);
@@ -211,8 +189,6 @@ FNetworkPredictionData_Client* UShooterCharacterMovement::GetPredictionData_Clie
 	}
 
 	return ClientPredictionData;
-
-
 }
 
 
@@ -230,23 +206,51 @@ FSavedMovePtr FNetworkPredictionData_Client_ShooterCharacter::AllocateNewMove()
 
 //////// SAVED MOVE /////////
 
-
-void FSavedMove_ShooterCharacter::Clear()
+void FSavedMove_ShooterCharacter::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
 {
-	UE_LOG(LogTemp, Warning, TEXT("CLEAR MOVE"));
-	Super::Clear();
-	bTeleportInput = false;
-	bJetpackOn = false;
+	// Method used to set a new move
+	Super::SetMoveFor(Character, InDeltaTime, NewAccel, ClientData);
+	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(Character);
+	if (ShooterCharacter)
+	{
+		// Set if teleport is pressed or not
+		bPressedTeleport = ShooterCharacter->bPressedTeleport;
+		if (bPressedTeleport) {
+			UE_LOG(LogTemp, Warning, TEXT("MOVE: SET MOVE, TELEPORT"));
+			ShooterCharacter->OnTeleportTriggered();
+		}
+
+		// Set if jetpack is on or not
+		bJetpackOn = ShooterCharacter->bJetpackOn;
+	}
 }
 
-uint8 FSavedMove_ShooterCharacter::GetCompressedFlags() const
+void FSavedMove_ShooterCharacter::PrepMoveFor(ACharacter* Character)
 {
-	return Super::GetCompressedFlags();
+	// Method used to make the correction
+
+	Super::PrepMoveFor(Character);
+	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(Character);
+	if (ShooterCharacter)
+	{
+		//Set jetpack on then leave it to the physics sim
+		ShooterCharacter->bJetpackOn = bJetpackOn;
+
+		//Set teleport on and execute it for the correction
+		ShooterCharacter->bPressedTeleport = bPressedTeleport;
+		if (bPressedTeleport) {
+			(Cast<UShooterCharacterMovement>(ShooterCharacter->GetCharacterMovement()))->DoTeleport();
+			ShooterCharacter->OnTeleportTriggered();
+		}
+
+			
+	}
 }
+
 
 bool FSavedMove_ShooterCharacter::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Character, float MaxDelta) const
 {
-	if (bTeleportInput != ((FSavedMove_ShooterCharacter*)&NewMove)->bTeleportInput)
+	if (bPressedTeleport != ((FSavedMove_ShooterCharacter*)&NewMove)->bPressedTeleport)
 		return false;
 	if (bJetpackOn != ((FSavedMove_ShooterCharacter*)&NewMove)->bJetpackOn)
 		return false;
@@ -254,28 +258,45 @@ bool FSavedMove_ShooterCharacter::CanCombineWith(const FSavedMovePtr& NewMove, A
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
 }
 
-void FSavedMove_ShooterCharacter::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
+
+void FSavedMove_ShooterCharacter::Clear()
 {
-	Super::SetMoveFor(Character, InDeltaTime, NewAccel, ClientData);
-	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(Character);
-	if (ShooterCharacter)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Move Created"));
-		bTeleportInput = ShooterCharacter->bPressedTeleport;
-		bJetpackOn = ShooterCharacter->bJetpackOn;
-	}
+	Super::Clear();
+	bPressedTeleport = false;
+	bJetpackOn = false;
 }
 
-void FSavedMove_ShooterCharacter::PrepMoveFor(ACharacter* Character)
+uint8 FSavedMove_ShooterCharacter::GetCompressedFlags() const
 {
+	// Method that incapsulates all the moves
 
-	Super::PrepMoveFor(Character);
-	UShooterCharacterMovement* CharacterMovement = Cast<UShooterCharacterMovement>(Character->GetCharacterMovement());
-	if (CharacterMovement)
+	uint8 Result = 0;
+
+	if (bPressedJump)
 	{
-		CharacterMovement->execSetJetpack(bJetpackOn);
-		CharacterMovement->execSetTeleport(bTeleportInput);
+		UE_LOG(LogTemp, Warning, TEXT("FLAG: PRESSED JUMP"));
+		Result |= FLAG_JumpPressed;
 	}
+
+	if (bWantsToCrouch)
+	{
+
+		Result |= FLAG_WantsToCrouch;
+	}
+
+	// ADDED MOVES: Used custom flags
+
+	if (bPressedTeleport)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FLAG: SET TELEPORT"));
+		Result |= FLAG_Custom_0;
+	}
+	if (bJetpackOn)
+	{
+		Result |= FLAG_Custom_1;
+	}
+
+	return Result;
 }
 
 #pragma endregion

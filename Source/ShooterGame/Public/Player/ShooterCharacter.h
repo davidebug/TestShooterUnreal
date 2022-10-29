@@ -209,11 +209,11 @@ class AShooterCharacter : public ACharacter
 
 	/** player pressed teleport action */
 
-	bool CheckTeleportInput();
+	bool CheckTeleportInput() const;
 
 	void OnTeleportPressed();
 
-	void OnTeleportDone();
+	void OnTeleportTriggered();
 
 	/** player pressed jump action in middle-air*/
 

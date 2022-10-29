@@ -1117,38 +1117,23 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 void AShooterCharacter::OnTeleportPressed()
 {
 	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
-	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-	if (ShooterCharMovement && !HasAuthority()) {
-		UE_LOG(LogTemp, Warning, TEXT("TELEPORT NOT MINE START"));
-		ShooterCharMovement->ServerSetTeleportRPC(true);
-	}
-
 	if (MyPC && MyPC->IsGameInputAllowed())
 	{
+		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 		if (ShooterCharMovement) {
-			ShooterCharMovement->SetTeleport(true);
+			bPressedTeleport = true;
+			ShooterCharMovement->DoTeleport();
 		}
 	}
 	//gestire animazioni il suono ecc
 }
 
-bool AShooterCharacter::CheckTeleportInput() {
-	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-	if (bPressedTeleport && ShooterCharMovement)
-		ShooterCharMovement->DoTeleport();
-
+bool AShooterCharacter::CheckTeleportInput() const{
 	return bPressedTeleport;
 }
 
-void AShooterCharacter::OnTeleportDone() {
-	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-	if (ShooterCharMovement) {
-
-		if (!HasAuthority())
-			ShooterCharMovement->ServerSetTeleportRPC(false);
-
-		ShooterCharMovement->SetTeleport(false);
-	}
+void AShooterCharacter::OnTeleportTriggered() {
+	bPressedTeleport = false;
 	//gestire animazioni il suono ecc
 }
 
@@ -1156,10 +1141,6 @@ void AShooterCharacter::OnJetpackStart()
 {
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
-
-		if (!HasAuthority())
-			ShooterCharMovement->ServerSetJetpackRPC(true);
-
 		ShooterCharMovement->SetJetpack(true);
 	}
 
@@ -1172,10 +1153,8 @@ void AShooterCharacter::OnJetpackStop()
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
 
-		if (!HasAuthority())
-			ShooterCharMovement->ServerSetJetpackRPC(false);
-
 		ShooterCharMovement->SetJetpack(false);
+
 	}
 	UE_LOG(LogTemp, Warning, TEXT("JETPACK STOP"));
 	//TODO (Decrease jetpack bar, animation & sound)
