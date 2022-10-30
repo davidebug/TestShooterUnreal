@@ -81,10 +81,6 @@ bool UShooterCharacterMovement::DoJetpack()
 
 void UShooterCharacterMovement::SetJetpack(bool bJetpackOn)
 {
-	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
-	if (ShooterCharacterOwner) {
-		ShooterCharacterOwner->bJetpackOn = bJetpackOn;
-	}
 	if (bJetpackOn) {
 		SetMovementMode(MOVE_Falling);
 		AirControl = 1;
@@ -93,6 +89,35 @@ void UShooterCharacterMovement::SetJetpack(bool bJetpackOn)
 		AirControl = 0.05f;
 	}
 }
+
+
+
+void UShooterCharacterMovement::SetTimeRewind(bool bTimeRewind)
+{
+	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
+	if (bTimeRewind) {
+		SetMovementMode(MOVE_Falling);
+		AirControl = 0;
+	}
+	else {
+		SetMovementMode(MOVE_Walking);
+		AirControl = 0.05f;
+	}
+}
+
+void UShooterCharacterMovement::DoTimeRewind()
+{
+	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
+	FVector NewPosition = ShooterCharacterOwner->PopLastPositionSaved();
+	
+	if(NewPosition != GetActorLocation()){
+		FRotator Orientation = ShooterCharacterOwner->GetActorRotation();
+		ShooterCharacterOwner->SetActorLocation(NewPosition);
+	}
+	else
+		ShooterCharacterOwner->OnTimeRewindStop();
+}
+
 
 //////////////////////////////////////
 // UNPACKING Method
@@ -105,19 +130,27 @@ void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(CharacterOwner);
 
 	// Jetpack is handled per Tick so is set the variable only
-	ShooterCharacter->bJetpackOn = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_1) != 0);
+	const bool bJetpackOn = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_1) != 0);
 
-	ShooterCharacter->bPressedTeleport = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_0) != 0);
+	const bool bPressedTeleport = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_0) != 0);
+	
 
 	if (CharacterOwner->GetLocalRole() == ROLE_Authority)
 	{
 		// Applies the input abilities contained in the move
-		const bool bPressedTeleport = ShooterCharacter->bPressedTeleport;
+		ShooterCharacter->bPressedTeleport = bPressedTeleport;
 		if (bPressedTeleport) {
 			DoTeleport();
 			ShooterCharacter->OnTeleportTriggered();
 		}
 
+		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
+			ShooterCharacter->bJetpackOn = bJetpackOn;
+			if (bJetpackOn)
+				ShooterCharacter->OnJetpackStart();
+			else
+				ShooterCharacter->OnJetpackStop();
+		}
 	}
 
 }
@@ -186,15 +219,28 @@ void FSavedMove_ShooterCharacter::PrepMoveFor(ACharacter* Character)
 	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(Character);
 	if (ShooterCharacter)
 	{
+		
+		
 		//Set jetpack on then leave it to the physics sim
-		ShooterCharacter->bJetpackOn = bJetpackOn;
+		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
+			ShooterCharacter->bJetpackOn = bJetpackOn;
+			if (bJetpackOn)
+				ShooterCharacter->OnJetpackStart();
+			else
+				ShooterCharacter->OnJetpackStop();
+		}
+
+		UShooterCharacterMovement* ShooterCharacterMovement = 
+			Cast<UShooterCharacterMovement>(ShooterCharacter->GetCharacterMovement());
 
 		//Set teleport on and execute it for the correction
 		ShooterCharacter->bPressedTeleport = bPressedTeleport;
 		if (bPressedTeleport) {
-			(Cast<UShooterCharacterMovement>(ShooterCharacter->GetCharacterMovement()))->DoTeleport();
+			ShooterCharacterMovement->DoTeleport();
 			ShooterCharacter->OnTeleportTriggered();
-		}			
+		}
+		
+		
 	}
 }
 

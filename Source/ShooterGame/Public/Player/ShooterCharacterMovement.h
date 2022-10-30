@@ -21,21 +21,29 @@ class UShooterCharacterMovement : public UCharacterMovementComponent
 		virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 
 public:
+
 		////////////////////////////////////////////////////
 		//New Abilities added to UCharacterMovementComponent
 
 	UFUNCTION(BlueprintCallable)
-		/* Sets the Jetpack boolean and recalls it on the server */
+		/* Sets the Jetpack values */
 		void SetJetpack(bool bJetpackOn);
 
+	UFUNCTION(BlueprintCallable)
 		/* Executes the jetpack locally */
 		virtual bool DoJetpack();
 
 	UFUNCTION(BlueprintCallable)
-
 		/* Executes the teleport locally */
 		virtual bool DoTeleport();
 
+	UFUNCTION(BlueprintCallable)
+		/* Sets the TimeRewind values */
+		virtual void SetTimeRewind(bool bTimeRewind);
+
+	UFUNCTION(BlueprintCallable)
+		/* Executes the time rewind locally */
+		virtual void DoTimeRewind();
 };
 
 

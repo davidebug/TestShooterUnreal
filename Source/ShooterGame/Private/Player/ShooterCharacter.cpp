@@ -71,6 +71,9 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 
 	bJetpackOn = false;
 	JetpackVelocity = 500.0f;
+	bPressedTeleport = false;
+	bPressedTimeRewind = false;
+	MaxPositionsSaved = 400;
 	
 }
 
@@ -1141,6 +1144,7 @@ void AShooterCharacter::OnJetpackStart()
 {
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
+		bJetpackOn = true;
 		ShooterCharMovement->SetJetpack(true);
 	}
 
@@ -1152,6 +1156,7 @@ void AShooterCharacter::OnJetpackStop()
 {
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
+		bJetpackOn = false;
 		ShooterCharMovement->SetJetpack(false);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("JETPACK STOP"));
@@ -1164,7 +1169,42 @@ bool AShooterCharacter::CanJetpack() {
 
 void AShooterCharacter::OnTimeRewindStart()
 {
-	//TODO
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+	if (MyPC && MyPC->IsGameInputAllowed())
+	{
+		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+		if (ShooterCharMovement) {	
+			bPressedTimeRewind = true;
+			ShooterCharMovement->SetTimeRewind(true);
+		}
+	}
+}
+
+void AShooterCharacter::OnTimeRewindStop()
+{
+		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+		if (ShooterCharMovement) {
+			bPressedTimeRewind = false;
+			ShooterCharMovement->SetTimeRewind(false);
+		}
+}
+
+
+void AShooterCharacter::UpdateSavedPositions()
+{
+	SavedPositionsArray.Add(GetActorLocation());
+	if (SavedPositionsArray.Num() > MaxPositionsSaved) {
+		SavedPositionsArray.RemoveAt(0);
+	}
+
+}
+
+FVector AShooterCharacter::PopLastPositionSaved()
+{
+	if(SavedPositionsArray.Num() > 0)
+		return SavedPositionsArray.Pop();
+	
+	return GetActorLocation();
 }
 
 bool AShooterCharacter::IsRunning() const
@@ -1244,6 +1284,15 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 			DrawDebugSphere(GetWorld(), PointToTest, 10.0f, 8, FColor::Red);
 		}
 	}
+
+	if(!bPressedTimeRewind)
+		UpdateSavedPositions();
+	else {
+		UShooterCharacterMovement* ShooterCharacterMovement =
+			Cast<UShooterCharacterMovement>(GetCharacterMovement());
+		ShooterCharacterMovement->DoTimeRewind();
+	}
+
 }
 
 void AShooterCharacter::BeginDestroy()

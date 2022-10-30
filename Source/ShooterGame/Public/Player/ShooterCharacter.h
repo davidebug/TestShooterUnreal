@@ -204,27 +204,40 @@ class AShooterCharacter : public ACharacter
 	/////////////////////////////////////////////////////////////////////////
 	// ADDED ABILITIES
 
-	//Override of Jump input function
+	/** Checks jump input and adds jetpack implementation */
 	virtual void CheckJumpInput(float DeltaTime) override;
 
-	/** player pressed teleport action */
-
+	/** Checks teleport input */
 	bool CheckTeleportInput() const;
 
+	/** Applies the teleport when Teleport key is pressed */
 	void OnTeleportPressed();
 
+	/** Sets the teleport as Done */
 	void OnTeleportTriggered();
 
-	/** player pressed jump action in middle-air*/
-
+	/** Handles the Jetpack and middle air movement when double jump is triggered */
 	void OnJetpackStart();
 
+	/** Stops the jetpack when on ground */
 	void OnJetpackStop();
 
+	/** Checks if there is enough energy for jetpacking */
 	bool CanJetpack();
 
-	/** player pressed time rewind button */
+	/** Time Rewind ability start */
 	void OnTimeRewindStart();
+
+	/** Time Rewind ability is stopped */
+	void OnTimeRewindStop();
+
+	/** Updates saved positions */
+	void UpdateSavedPositions();
+
+	/** Gets the last position added in the array */
+	FVector PopLastPositionSaved();
+
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// Reading data
@@ -439,14 +452,25 @@ public:
 		uint32 bPressedTeleport : 1;
 
 	UPROPERTY(BlueprintReadOnly, Category = Character)
+		uint32 bPressedTimeRewind : 1;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character)
 		uint32 bJetpackOn : 1;
 
 	UPROPERTY(BlueprintReadOnly, Category = Character)
 		uint32 bPressedAbility1 : 1;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		float JetpackVelocity;
 
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		TArray<FVector> SavedPositionsArray;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		int MaxPositionsSaved;
+
+
+	////////////////////////////////////////////////////////////
 	/** Take damage, handle death */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
 
