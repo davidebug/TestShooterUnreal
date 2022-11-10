@@ -105,14 +105,14 @@ void UShooterCharacterMovement::SetTimeRewind(bool bTimeRewind)
 	}
 }
 
-void UShooterCharacterMovement::DoTimeRewind()
+void UShooterCharacterMovement::DoTimeRewind(float DeltaTime)
 {
 	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
 	FVector NewPosition = ShooterCharacterOwner->PopLastPositionSaved();
-	
+	FVector ActualPosition = GetActorLocation();
 	if(NewPosition != GetActorLocation()){
 		FRotator Orientation = ShooterCharacterOwner->GetActorRotation();
-		ShooterCharacterOwner->SetActorLocation(NewPosition);
+		ShooterCharacterOwner->SetActorLocationAndRotation(NewPosition,Orientation);
 	}
 	else
 		ShooterCharacterOwner->OnTimeRewindStop();
@@ -129,11 +129,13 @@ void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 	// Unpack the SavedMove arrived
 	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(CharacterOwner);
 
+	const bool bPressedTeleport = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_0) != 0);
+	
 	// Jetpack is handled per Tick so is set the variable only
 	const bool bJetpackOn = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_1) != 0);
 
-	const bool bPressedTeleport = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_0) != 0);
-	
+	// TimeRewind is handled per Tick so is set the variable only
+	const bool bPressedTimeRewind = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_2) != 0);
 
 	if (CharacterOwner->GetLocalRole() == ROLE_Authority)
 	{
@@ -145,14 +147,20 @@ void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 		}
 
 		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
-			ShooterCharacter->bJetpackOn = bJetpackOn;
 			if (bJetpackOn)
 				ShooterCharacter->OnJetpackStart();
 			else
 				ShooterCharacter->OnJetpackStop();
 		}
-	}
 
+		if (ShooterCharacter->bPressedTimeRewind != bPressedTimeRewind) {
+			if (bPressedTimeRewind)
+				ShooterCharacter->OnTimeRewindStart();
+			else
+				ShooterCharacter->OnTimeRewindStop();
+
+		}
+	}
 }
 
 
@@ -206,8 +214,13 @@ void FSavedMove_ShooterCharacter::SetMoveFor(ACharacter* Character, float InDelt
 			ShooterCharacter->OnTeleportTriggered();
 		}
 
-		// Set if jetpack is on or not
+		// Set if jetpack is on or not, delegates the rest to ShooterCharacter's Tick
 		bJetpackOn = ShooterCharacter->bJetpackOn;
+
+
+		// Set if time rewind is active or not, delegates the rest to ShooterCharacter's Tick
+		bPressedTimeRewind = ShooterCharacter->bPressedTimeRewind;
+
 	}
 }
 
@@ -221,15 +234,6 @@ void FSavedMove_ShooterCharacter::PrepMoveFor(ACharacter* Character)
 	{
 		
 		
-		//Set jetpack on then leave it to the physics sim
-		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
-			ShooterCharacter->bJetpackOn = bJetpackOn;
-			if (bJetpackOn)
-				ShooterCharacter->OnJetpackStart();
-			else
-				ShooterCharacter->OnJetpackStop();
-		}
-
 		UShooterCharacterMovement* ShooterCharacterMovement = 
 			Cast<UShooterCharacterMovement>(ShooterCharacter->GetCharacterMovement());
 
@@ -239,8 +243,23 @@ void FSavedMove_ShooterCharacter::PrepMoveFor(ACharacter* Character)
 			ShooterCharacterMovement->DoTeleport();
 			ShooterCharacter->OnTeleportTriggered();
 		}
-		
-		
+
+		//Set jetpack then leave it to ShooterCharacter's Tick
+		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
+			ShooterCharacter->bJetpackOn = bJetpackOn;
+			if (bJetpackOn)
+				ShooterCharacter->OnJetpackStart();
+			else
+				ShooterCharacter->OnJetpackStop();
+		}
+
+		//Set Time Rewind then leave it to ShooterCharacter's Tick
+		if (ShooterCharacter->bPressedTimeRewind != bPressedTimeRewind) {
+			if (bPressedTimeRewind)
+				ShooterCharacter->OnTimeRewindStart();
+			else
+				ShooterCharacter->OnTimeRewindStop();
+		}
 	}
 }
 
@@ -250,6 +269,8 @@ bool FSavedMove_ShooterCharacter::CanCombineWith(const FSavedMovePtr& NewMove, A
 	if (bPressedTeleport != ((FSavedMove_ShooterCharacter*)&NewMove)->bPressedTeleport)
 		return false;
 	if (bJetpackOn != ((FSavedMove_ShooterCharacter*)&NewMove)->bJetpackOn)
+		return false;
+	if (bPressedTimeRewind != ((FSavedMove_ShooterCharacter*)&NewMove)->bPressedTimeRewind)
 		return false;
 
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
@@ -261,6 +282,7 @@ void FSavedMove_ShooterCharacter::Clear()
 	Super::Clear();
 	bPressedTeleport = false;
 	bJetpackOn = false;
+	bPressedTimeRewind = false;
 }
 
 uint8 FSavedMove_ShooterCharacter::GetCompressedFlags() const
@@ -290,6 +312,10 @@ uint8 FSavedMove_ShooterCharacter::GetCompressedFlags() const
 	if (bJetpackOn)
 	{
 		Result |= FLAG_Custom_1;
+	}
+	if (bPressedTimeRewind)
+	{
+		Result |= FLAG_Custom_2;
 	}
 
 	return Result;

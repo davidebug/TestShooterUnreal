@@ -69,12 +69,17 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
+
+	// NEW VARIABLES INIT
+	JetpackMaxEnergy = 200.0f;
+	JetpackCurrentEnergy = JetpackMaxEnergy;
 	bJetpackOn = false;
 	JetpackVelocity = 500.0f;
 	bPressedTeleport = false;
 	bPressedTimeRewind = false;
-	MaxPositionsSaved = 400;
-	
+	MaxPositionsSaved = 100;
+	SavedPositionsInterval = 5;
+	NotSavedPositions = 0;
 }
 
 void AShooterCharacter::PostInitializeComponents()
@@ -1085,8 +1090,9 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 
 	if (ShooterCharacterMovement)
 	{
-		if (bJetpackOn) {
+		if (bJetpackOn && CanJetpack()) {
 			ShooterCharacterMovement->DoJetpack();
+			JetpackCurrentEnergy--;
 			UE_LOG(LogTemp, Warning, TEXT("DOING JETPACK"));
 		}
 		else if(bPressedJump){
@@ -1112,6 +1118,10 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 			}
 
 				bWasJumping = bDidJump;
+		}
+		else if(ShooterCharacterMovement->IsMovingOnGround()){
+			if(JetpackCurrentEnergy <= JetpackMaxEnergy)
+				JetpackCurrentEnergy++;
 		}
 
 	}
@@ -1164,7 +1174,7 @@ void AShooterCharacter::OnJetpackStop()
 }
 
 bool AShooterCharacter::CanJetpack() {
-	return true;
+	return JetpackCurrentEnergy > 0;
 }
 
 void AShooterCharacter::OnTimeRewindStart()
@@ -1178,6 +1188,8 @@ void AShooterCharacter::OnTimeRewindStart()
 			ShooterCharMovement->SetTimeRewind(true);
 		}
 	}
+
+	//Handle Animation - Sound
 }
 
 void AShooterCharacter::OnTimeRewindStop()
@@ -1187,16 +1199,28 @@ void AShooterCharacter::OnTimeRewindStop()
 			bPressedTimeRewind = false;
 			ShooterCharMovement->SetTimeRewind(false);
 		}
+
+	//Handle Animation - Sound
+}
+
+bool AShooterCharacter::IsTimeRewinding() const
+{
+	return bPressedTimeRewind;
 }
 
 
 void AShooterCharacter::UpdateSavedPositions()
 {
-	SavedPositionsArray.Add(GetActorLocation());
-	if (SavedPositionsArray.Num() > MaxPositionsSaved) {
-		SavedPositionsArray.RemoveAt(0);
-	}
-
+	//Updates Saved Positions Array every interval
+	//The interval determines the Speed of the Ability
+	if (NotSavedPositions >= SavedPositionsInterval) {
+		SavedPositionsArray.Add(GetActorLocation());
+		if (SavedPositionsArray.Num() > MaxPositionsSaved) {
+			SavedPositionsArray.RemoveAt(0);
+		}
+		NotSavedPositions = 0;
+	}else
+		NotSavedPositions ++;
 }
 
 FVector AShooterCharacter::PopLastPositionSaved()
@@ -1290,7 +1314,7 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 	else {
 		UShooterCharacterMovement* ShooterCharacterMovement =
 			Cast<UShooterCharacterMovement>(GetCharacterMovement());
-		ShooterCharacterMovement->DoTimeRewind();
+		ShooterCharacterMovement->DoTimeRewind(DeltaSeconds);
 	}
 
 }

@@ -43,7 +43,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		/* Executes the time rewind locally */
-		virtual void DoTimeRewind();
+		virtual void DoTimeRewind(float DeltaTime);
 };
 
 
@@ -91,6 +91,9 @@ public:
 
 	/* Variable that tells if the Jetpack is on or not */
 	uint32 bJetpackOn : 1;
+
+	/* Variable that tells if the TimeRewind is active or not */
+	uint32 bPressedTimeRewind : 1;
 
 };
 

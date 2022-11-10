@@ -288,6 +288,11 @@ class AShooterCharacter : public ACharacter
 	UFUNCTION(BlueprintCallable, Category = Pawn)
 	bool IsRunning() const;
 
+
+	/** Tells if time is rewinding or not */
+	UFUNCTION(BlueprintCallable, Category = Pawn)
+	bool IsTimeRewinding() const;
+
 	/** get camera view type */
 	UFUNCTION(BlueprintCallable, Category = Mesh)
 	virtual bool IsFirstPerson() const;
@@ -361,6 +366,9 @@ protected:
 
 	/** current firing state */
 	uint8 bWantsToFire : 1;
+
+	/** Current number of positions not saved in the SavedPositions Array */
+	int NotSavedPositions;
 
 	/** when low health effects should start */
 	float LowHealthPercentage;
@@ -448,26 +456,43 @@ public:
 	///////////////////////////////////////////////////////////
 	// Useful variables for added abilities
 
+	/** Tells if teleport has been triggered or not */
 	UPROPERTY(BlueprintReadOnly, Category = Character)
 		uint32 bPressedTeleport : 1;
 
+	/** Tells if Time Rewind has been triggered and is active or not */
 	UPROPERTY(BlueprintReadOnly, Category = Character)
 		uint32 bPressedTimeRewind : 1;
 
+	/** Jetpack current energy pool */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		int JetpackCurrentEnergy;
+
+	/** Jetpack maximum energy pool */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		int JetpackMaxEnergy;
+
+	/** Tells if Jetpack is active or not */
 	UPROPERTY(BlueprintReadOnly, Category = Character)
 		uint32 bJetpackOn : 1;
 
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-		uint32 bPressedAbility1 : 1;
-
+	/** Jetpack velocity*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		float JetpackVelocity;
 
+	/** Saved old positions of the character used for time rewinding */
 	UPROPERTY(BlueprintReadOnly, Category = Character)
 		TArray<FVector> SavedPositionsArray;
 
+	/** Maximum number of saved old positions */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		int MaxPositionsSaved;
+
+	/** Interval of frames in which the character saves his positions in SavedPositionsArray
+	The Higher the interval is, the faster will be the speed of Time Rewind */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		int SavedPositionsInterval;
+
 
 
 	////////////////////////////////////////////////////////////

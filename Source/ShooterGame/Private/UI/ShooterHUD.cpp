@@ -76,6 +76,7 @@ AShooterHUD::AShooterHUD(const FObjectInitializer& ObjectInitializer) : Super(Ob
 	TimerIcon = UCanvas::MakeIcon(HUDMainTexture, 381, 93, 24, 24);
 	KilledIcon = UCanvas::MakeIcon(HUDMainTexture, 425, 92, 38, 36);
 	PlaceIcon = UCanvas::MakeIcon(HUDMainTexture, 250, 468, 21, 28);
+	JetpackIcon = UCanvas::MakeIcon(HUDMainTexture, 208, 468, 28, 28);
 
 	Crosshair[EShooterCrosshairDirection::Left] = UCanvas::MakeIcon(HUDMainTexture, 43, 402, 25, 9); // left
 	Crosshair[EShooterCrosshairDirection::Right] = UCanvas::MakeIcon(HUDMainTexture, 88, 402, 25, 9); // right
@@ -320,6 +321,10 @@ void AShooterHUD::DrawWeaponHUD()
 	}
 }
 
+
+
+
+
 void AShooterHUD::DrawHealth()
 {
 	AShooterCharacter* MyPawn = Cast<AShooterCharacter>(GetOwningPawn());
@@ -336,6 +341,26 @@ void AShooterHUD::DrawHealth()
 	Canvas->DrawItem(TileItem);
 
 	Canvas->DrawIcon(HealthIcon,HealthPosX + Offset * ScaleUI, HealthPosY + (HealthBar.VL - HealthIcon.VL) / 2.0f * ScaleUI, ScaleUI);
+}
+
+void AShooterHUD::DrawJetpackBar()
+{
+	AShooterCharacter* MyPawn = Cast<AShooterCharacter>(GetOwningPawn());
+	Canvas->SetDrawColor(FColor::Yellow);
+
+	//Same position and mechanism of healthbar but a little bit to the right
+	const float JetpackPosX = ((Canvas->ClipX - HealthBarBg.UL * ScaleUI) / 2) * 1.5;
+	const float JetpackPosY = Canvas->ClipY - (Offset + HealthBarBg.VL) * ScaleUI;
+	Canvas->DrawIcon(HealthBarBg, JetpackPosX, JetpackPosY, ScaleUI);
+	const float JetpackAmount = FMath::Min(1.0f, static_cast<float>(MyPawn->JetpackCurrentEnergy) / MyPawn->JetpackMaxEnergy);
+
+	FCanvasTileItem TileItem(FVector2D(JetpackPosX, JetpackPosY), HealthBar.Texture->Resource,
+		FVector2D(HealthBar.UL * JetpackAmount * ScaleUI, HealthBar.VL * ScaleUI), FLinearColor::White);
+	MakeUV(HealthBar, TileItem.UV0, TileItem.UV1, HealthBar.U, HealthBar.V, HealthBar.UL * JetpackAmount, HealthBar.VL);
+	TileItem.BlendMode = SE_BLEND_Translucent;
+	Canvas->DrawItem(TileItem);
+
+	Canvas->DrawIcon(JetpackIcon, JetpackPosX + Offset * ScaleUI, JetpackPosY + (HealthBar.VL - HealthIcon.VL) / 2.0f * ScaleUI, ScaleUI);
 }
 
 void AShooterHUD::DrawNVIDIAReflexTimers()
@@ -644,6 +669,7 @@ void AShooterHUD::DrawHUD()
 		if (MyPawn && MyPawn->IsAlive())
 		{
 			DrawHealth();
+			DrawJetpackBar();
 			DrawWeaponHUD();
 		}
 		else

@@ -234,6 +234,10 @@ protected:
 	UPROPERTY()
 	FCanvasIcon TimerIcon;
 
+	/** Test Jetpack icon. */
+	UPROPERTY()
+	FCanvasIcon JetpackIcon;
+
 	/** Podium icon. */
 	UPROPERTY()
 	FCanvasIcon PlaceIcon;
@@ -391,5 +395,15 @@ protected:
 	* @returns The next Y position to draw any further strings
 	*/
 	float ShowInfoItems(float YOffset, float TextScale);
+
+
+	/// ADDED ABILITIES//
+
+	/** Draw Jetpack Bar, similar to Health bar */
+	void DrawJetpackBar();
+
+	/*void DrawTeleportCountdown();
+
+	void DrawTimeRewindCountdown();*/
 	
 };
