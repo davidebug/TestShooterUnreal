@@ -13,6 +13,9 @@
 #include "OnlineSubsystemUtils.h"
 #include "ShooterGameUserSettings.h"
 #include "Performance/LatencyMarkerModule.h"
+#include <string>
+#include <string>
+#include <string>
 
 #define LOCTEXT_NAMESPACE "ShooterGame.HUD.Menu"
 
@@ -71,12 +74,16 @@ AShooterHUD::AShooterHUD(const FObjectInitializer& ObjectInitializer) : Super(Ob
 	HealthBar = UCanvas::MakeIcon(HUDAssets02Texture, 67, 212, 372, 50);
 	HealthBarBg = UCanvas::MakeIcon(HUDAssets02Texture, 67, 162, 372, 50);
 
+	AbilityReady = UCanvas::MakeIcon(HUDAssets02Texture, 100, 212, 100, 50);
+	AbilityNotReady = UCanvas::MakeIcon(HUDAssets02Texture, 100, 162, 100, 50);
+
 	HealthIcon = UCanvas::MakeIcon(HUDAssets02Texture, 78, 262, 28, 28);
 	KillsIcon = UCanvas::MakeIcon(HUDMainTexture, 318, 93, 24, 24);
-	TimerIcon = UCanvas::MakeIcon(HUDMainTexture, 381, 93, 24, 24);
+	TimerIcon = UCanvas::MakeIcon(HUDMainTexture, 381, 93, 30, 28);
 	KilledIcon = UCanvas::MakeIcon(HUDMainTexture, 425, 92, 38, 36);
 	PlaceIcon = UCanvas::MakeIcon(HUDMainTexture, 250, 468, 21, 28);
-	JetpackIcon = UCanvas::MakeIcon(HUDMainTexture, 208, 468, 28, 28);
+	JetpackIcon = UCanvas::MakeIcon(HUDMainTexture, 208, 468, 30, 28);
+	TeleportIcon = UCanvas::MakeIcon(HUDMainTexture, 195, 415, 28, 35);
 
 	Crosshair[EShooterCrosshairDirection::Left] = UCanvas::MakeIcon(HUDMainTexture, 43, 402, 25, 9); // left
 	Crosshair[EShooterCrosshairDirection::Right] = UCanvas::MakeIcon(HUDMainTexture, 88, 402, 25, 9); // right
@@ -360,7 +367,60 @@ void AShooterHUD::DrawJetpackBar()
 	TileItem.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(TileItem);
 
-	Canvas->DrawIcon(JetpackIcon, JetpackPosX + Offset * ScaleUI, JetpackPosY + (HealthBar.VL - HealthIcon.VL) / 2.0f * ScaleUI, ScaleUI);
+	Canvas->DrawIcon(JetpackIcon, JetpackPosX + Offset * ScaleUI, JetpackPosY + (HealthBar.VL - JetpackIcon.VL) / 2.0f * ScaleUI, ScaleUI);
+}
+
+void AShooterHUD::DrawAbilities()
+{
+	AShooterCharacter* MyPawn = Cast<AShooterCharacter>(GetOwningPawn());
+	Canvas->SetDrawColor(FColor::White);
+
+	FCanvasTextItem TextItem(FVector2D::ZeroVector, FText::GetEmpty(), BigFont, HUDDark);
+	TextItem.EnableShadow(FLinearColor::Black);
+	float TextScale = 0.57f;
+	FString Text;
+	TextItem.FontRenderInfo = ShadowedFont;
+	TextItem.Scale = FVector2D(TextScale * ScaleUI, TextScale * ScaleUI);
+	FString cooldownText;
+
+	int Ability1Cooldown = (int)MyPawn->CurrentTeleportCooldown;
+	const float Ability1PosX = ((Canvas->ClipX - AbilityReady.UL * ScaleUI) / 2) * 1.5;
+	const float Ability1PosY = (Canvas->ClipY - (Offset + AbilityReady.VL) * ScaleUI) /1.1;
+	Canvas->DrawIcon(AbilityNotReady, Ability1PosX, Ability1PosY, ScaleUI);
+	if (Ability1Cooldown < 1) {
+		Canvas->DrawIcon(AbilityReady, Ability1PosX, Ability1PosY, ScaleUI);
+		cooldownText = "T";
+		TextItem.Text = FText::FromString(cooldownText);
+	}
+	else {
+		cooldownText = FString::FromInt(Ability1Cooldown);
+		TextItem.Text = FText::FromString(cooldownText);
+	}
+	Canvas->DrawIcon(TeleportIcon, Ability1PosX + Offset * ScaleUI, Ability1PosY + (AbilityReady.VL - TimerIcon.VL) / 2.0f * ScaleUI, ScaleUI);
+	 float AbilityTextPosX = (Ability1PosX + Offset * ScaleUI) * 1.03;
+	 float AbilityTextPosY = (Ability1PosY + (AbilityReady.VL - TimerIcon.VL) / 2.0f * ScaleUI) / 1.005;
+	Canvas->DrawItem(TextItem, AbilityTextPosX, AbilityTextPosY);
+	
+	
+	
+	int Ability2Cooldown = (int)MyPawn->CurrentTimeRewindCooldown;
+	const float Ability2PosX = ((Canvas->ClipX - AbilityReady.UL * ScaleUI) / 2) * 1.5;
+	const float Ability2PosY = (Canvas->ClipY - (Offset + AbilityReady.VL) * ScaleUI) / 1.05;
+	Canvas->DrawIcon(AbilityNotReady, Ability2PosX, Ability2PosY, ScaleUI);
+	if (Ability2Cooldown < 1) {
+		Canvas->DrawIcon(AbilityReady, Ability2PosX, Ability2PosY, ScaleUI);
+		cooldownText = "E";
+		TextItem.Text = FText::FromString(cooldownText);
+	}
+	else {
+		cooldownText = FString::FromInt(Ability2Cooldown);
+		TextItem.Text = FText::FromString(cooldownText);
+	}
+	Canvas->DrawIcon(TimerIcon, Ability2PosX + Offset * ScaleUI, Ability2PosY + (AbilityReady.VL - TimerIcon.VL) / 2.0f * ScaleUI, ScaleUI);
+	AbilityTextPosX = (Ability2PosX + Offset * ScaleUI) * 1.03;
+	AbilityTextPosY = (Ability2PosY + (AbilityReady.VL - TimerIcon.VL) / 2.0f * ScaleUI) / 1.005;
+	Canvas->DrawItem(TextItem, AbilityTextPosX, AbilityTextPosY);
+
 }
 
 void AShooterHUD::DrawNVIDIAReflexTimers()
@@ -670,6 +730,7 @@ void AShooterHUD::DrawHUD()
 		{
 			DrawHealth();
 			DrawJetpackBar();
+			DrawAbilities();
 			DrawWeaponHUD();
 		}
 		else

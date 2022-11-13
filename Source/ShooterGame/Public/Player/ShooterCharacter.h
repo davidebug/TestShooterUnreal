@@ -237,7 +237,20 @@ class AShooterCharacter : public ACharacter
 	/** Gets the last position added in the array */
 	FVector PopLastPositionSaved();
 
+	/** Updates abilities cooldowns per second */
+	void UpdateAbilitiesCooldowns(float DeltaSeconds);
 
+	/** Updates abilities cooldowns per second */
+	void StartTeleportCooldown();
+
+	/** Updates abilities cooldowns per second */
+	void StartTimeRewindCooldown();
+
+	/** Updates abilities cooldowns per second */
+	bool CanTeleport();
+
+	/** Updates abilities cooldowns per second */
+	bool CanTimeRewind();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Reading data
@@ -479,6 +492,20 @@ public:
 	/** Jetpack velocity*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		float JetpackVelocity;
+
+	/** Teleport cooldown*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float TeleportCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float CurrentTeleportCooldown;
+
+	/** Time rewind cooldown*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float TimeRewindCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float CurrentTimeRewindCooldown;
 
 	/** Saved old positions of the character used for time rewinding */
 	UPROPERTY(BlueprintReadOnly, Category = Character)

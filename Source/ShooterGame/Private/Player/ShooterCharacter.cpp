@@ -80,6 +80,10 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	MaxPositionsSaved = 100;
 	SavedPositionsInterval = 5;
 	NotSavedPositions = 0;
+	TeleportCooldown = 6;
+	CurrentTeleportCooldown = 0;
+	TimeRewindCooldown = 6;
+	CurrentTimeRewindCooldown = 0;
 }
 
 void AShooterCharacter::PostInitializeComponents()
@@ -1093,7 +1097,6 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 		if (bJetpackOn && CanJetpack()) {
 			ShooterCharacterMovement->DoJetpack();
 			JetpackCurrentEnergy--;
-			UE_LOG(LogTemp, Warning, TEXT("DOING JETPACK"));
 		}
 		else if(bPressedJump){
 
@@ -1129,13 +1132,16 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 
 void AShooterCharacter::OnTeleportPressed()
 {
-	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
-	if (MyPC && MyPC->IsGameInputAllowed())
-	{
-		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-		if (ShooterCharMovement) {
-			bPressedTeleport = true;
-			ShooterCharMovement->DoTeleport();
+	if (CanTeleport()) {
+		AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+		if (MyPC && MyPC->IsGameInputAllowed())
+		{
+			UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+			if (ShooterCharMovement) {
+				bPressedTeleport = true;
+				ShooterCharMovement->DoTeleport();
+				StartTeleportCooldown();
+			}
 		}
 	}
 	//gestire animazioni il suono ecc
@@ -1157,8 +1163,6 @@ void AShooterCharacter::OnJetpackStart()
 		bJetpackOn = true;
 		ShooterCharMovement->SetJetpack(true);
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("JETPACK START"));
 	//TODO (Decrease jetpack bar, animation & sound)
 }
 
@@ -1179,16 +1183,18 @@ bool AShooterCharacter::CanJetpack() {
 
 void AShooterCharacter::OnTimeRewindStart()
 {
-	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
-	if (MyPC && MyPC->IsGameInputAllowed())
-	{
-		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-		if (ShooterCharMovement) {	
-			bPressedTimeRewind = true;
-			ShooterCharMovement->SetTimeRewind(true);
+	if(CanTimeRewind()) {
+		AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+		if (MyPC && MyPC->IsGameInputAllowed())
+		{
+			UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+			if (ShooterCharMovement) {
+				bPressedTimeRewind = true;
+				ShooterCharMovement->SetTimeRewind(true);
+				StartTimeRewindCooldown();
+			}
 		}
 	}
-
 	//Handle Animation - Sound
 }
 
@@ -1221,6 +1227,37 @@ void AShooterCharacter::UpdateSavedPositions()
 		NotSavedPositions = 0;
 	}else
 		NotSavedPositions ++;
+}
+
+void AShooterCharacter::UpdateAbilitiesCooldowns(float DeltaSeconds)
+{
+	if(CurrentTimeRewindCooldown >= 1)
+		CurrentTimeRewindCooldown -= DeltaSeconds;
+
+	if (CurrentTeleportCooldown >= 1)
+		CurrentTeleportCooldown -= DeltaSeconds;
+}
+
+void AShooterCharacter::StartTimeRewindCooldown()
+{
+	CurrentTimeRewindCooldown = TimeRewindCooldown;
+
+}
+
+void AShooterCharacter::StartTeleportCooldown()
+{
+	CurrentTeleportCooldown = TeleportCooldown;
+}
+
+
+bool AShooterCharacter::CanTeleport()
+{
+	return CurrentTeleportCooldown < 1;
+}
+
+bool AShooterCharacter::CanTimeRewind()
+{
+	return CurrentTimeRewindCooldown < 1;
 }
 
 FVector AShooterCharacter::PopLastPositionSaved()
@@ -1288,6 +1325,8 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 		}
 
 		UpdateRunSounds();
+		UpdateAbilitiesCooldowns(DeltaSeconds);
+
 	}
 
 	const APlayerController* PC = Cast<APlayerController>(GetController());

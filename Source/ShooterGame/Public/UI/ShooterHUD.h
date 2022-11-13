@@ -238,6 +238,18 @@ protected:
 	UPROPERTY()
 	FCanvasIcon JetpackIcon;
 
+	/** Test Teleport icon. */
+	UPROPERTY()
+	FCanvasIcon TeleportIcon;
+
+	/** Test Jetpack icon. */
+	UPROPERTY()
+	FCanvasIcon AbilityReady;
+
+	/** Test Jetpack icon. */
+	UPROPERTY()
+	FCanvasIcon AbilityNotReady;
+
 	/** Podium icon. */
 	UPROPERTY()
 	FCanvasIcon PlaceIcon;
@@ -401,6 +413,9 @@ protected:
 
 	/** Draw Jetpack Bar, similar to Health bar */
 	void DrawJetpackBar();
+
+	/** Draw Abilities HUD, such as teleport and time rewind */
+	void DrawAbilities();
 
 	/*void DrawTeleportCountdown();
 
