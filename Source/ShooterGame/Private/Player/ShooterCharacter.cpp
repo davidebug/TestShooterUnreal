@@ -9,7 +9,8 @@
 #include "Animation/AnimInstance.h"
 #include "Sound/SoundNodeLocalPlayer.h"
 #include "AudioThread.h"
-#include "..\..\Public\Player\ShooterCharacter.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
 
 static int32 NetVisualizeRelevancyTestPoints = 0;
 FAutoConsoleVariableRef CVarNetVisualizeRelevancyTestPoints(
@@ -1095,6 +1096,13 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 	if (ShooterCharacterMovement)
 	{
 		if (bJetpackOn && CanJetpack()) {
+
+			if (NS_JetpackEffect)
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_JetpackEffect, GetActorLocation());
+
+			if (SB_JetpackSound)
+				UGameplayStatics::PlaySoundAtLocation(this, SB_JetpackSound, GetActorLocation());
+			
 			ShooterCharacterMovement->DoJetpack();
 			JetpackCurrentEnergy--;
 		}
@@ -1144,8 +1152,7 @@ void AShooterCharacter::OnTeleportPressed()
 			}
 		}
 	}
-	//gestire animazioni il suono ecc
-}
+	}
 
 bool AShooterCharacter::CheckTeleportInput() const{
 	return bPressedTeleport;
@@ -1153,7 +1160,12 @@ bool AShooterCharacter::CheckTeleportInput() const{
 
 void AShooterCharacter::OnTeleportTriggered() {
 	bPressedTeleport = false;
-	//gestire animazioni il suono ecc
+
+	if (SB_TeleportSound)
+		UGameplayStatics::PlaySoundAtLocation(this, SB_TeleportSound, GetActorLocation());
+
+	if (NS_AbilityEffect)
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_JetpackEffect, GetActorLocation());
 }
 
 void AShooterCharacter::OnJetpackStart()
@@ -1194,8 +1206,11 @@ void AShooterCharacter::OnTimeRewindStart()
 				StartTimeRewindCooldown();
 			}
 		}
+		if (SB_TimeRewindSound)
+			UGameplayStatics::PlaySoundAtLocation(this, SB_TimeRewindSound, GetActorLocation(), 2.0f, 2.0f);
+		if (NS_AbilityEffect)
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_JetpackEffect, GetActorLocation());
 	}
-	//Handle Animation - Sound
 }
 
 void AShooterCharacter::OnTimeRewindStop()
@@ -1204,9 +1219,11 @@ void AShooterCharacter::OnTimeRewindStop()
 		if (ShooterCharMovement) {
 			bPressedTimeRewind = false;
 			ShooterCharMovement->SetTimeRewind(false);
+
+			if (NS_AbilityEffect)
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_JetpackEffect, GetActorLocation());
 		}
 
-	//Handle Animation - Sound
 }
 
 bool AShooterCharacter::IsTimeRewinding() const

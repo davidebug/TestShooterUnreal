@@ -5,6 +5,9 @@
 #include "ShooterTypes.h"
 #include "ShooterCharacter.generated.h"
 
+class UNiagaraSystem;
+class USoundBase;
+
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShooterCharacterEquipWeapon, AShooterCharacter*, AShooterWeapon* /* new */);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShooterCharacterUnEquipWeapon, AShooterCharacter*, AShooterWeapon* /* old */);
 
@@ -519,6 +522,21 @@ public:
 	The Higher the interval is, the faster will be the speed of Time Rewind */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		int SavedPositionsInterval;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		UNiagaraSystem* NS_JetpackEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		USoundBase* SB_JetpackSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		UNiagaraSystem* NS_AbilityEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		USoundBase* SB_TeleportSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		USoundBase* SB_TimeRewindSound;
 
 
 

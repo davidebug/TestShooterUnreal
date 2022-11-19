@@ -23,11 +23,12 @@ public class ShooterGame : ModuleRules
             }
 		);
 
-        PublicDependencyModuleNames.AddRange(
+		PublicDependencyModuleNames.AddRange(
 			new string[] {
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"InputCore",
 				"OnlineSubsystem",
 				"OnlineSubsystemUtils",
 				"AssetRegistry",
@@ -35,6 +36,7 @@ public class ShooterGame : ModuleRules
 				"AIModule",
 				"GameplayTasks",
 				"Gauntlet",
+				"Niagara"
 			}
 		);
 
@@ -50,7 +52,7 @@ public class ShooterGame : ModuleRules
 				"PakFile",
 				"RHI",
 				"PhysicsCore",
-				"GameplayCameras"
+				"GameplayCameras",
 			}
 		);
 
