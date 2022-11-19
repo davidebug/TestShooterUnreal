@@ -7,6 +7,7 @@
 
 class UNiagaraSystem;
 class USoundBase;
+class UNiagaraComponent;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShooterCharacterEquipWeapon, AShooterCharacter*, AShooterWeapon* /* new */);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShooterCharacterUnEquipWeapon, AShooterCharacter*, AShooterWeapon* /* old */);
@@ -623,6 +624,9 @@ protected:
 
 
 protected:
+
+	UNiagaraComponent* NC_JetpackEffectComponent;
+
 	/** Returns Mesh1P subobject **/
 	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 };
