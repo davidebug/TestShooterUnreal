@@ -123,20 +123,24 @@ void AShooterCharacter::PostInitializeComponents()
 		}
 
 		//Initialize JetpackFX
-		if (NS_JetpackFX) {
-
-			USceneComponent* JetpackComponent = GetMesh()->GetChildComponent(0);
-
-				UNiagaraComponent* tmp =
-					UNiagaraFunctionLibrary::SpawnSystemAttached(NS_JetpackFX, JetpackComponent, NAME_None, FVector(0.f), FRotator(0.f),
-						EAttachLocation::Type::KeepRelativeOffset, false, false);
-
-				NC_JetpackFXComponent = tmp;
-
-		}
+		ResetJetpackFXComponent();
 
 	}
 	
+}
+
+void  AShooterCharacter::ResetJetpackFXComponent() {
+	if (NS_JetpackFX) {
+
+		USceneComponent* JetpackComponent = GetMesh()->GetChildComponent(0);
+
+		UNiagaraComponent* tmp =
+			UNiagaraFunctionLibrary::SpawnSystemAttached(NS_JetpackFX, JetpackComponent, NAME_None, FVector(0.f), FRotator(0.f),
+				EAttachLocation::Type::KeepRelativeOffset, false, false,ENCPoolMethod::None,false);
+
+		NC_JetpackFXComponent = tmp;
+
+	}
 }
 
 void AShooterCharacter::BeginPlay() {
@@ -1196,7 +1200,11 @@ void AShooterCharacter::OnJetpackStart()
 	if (ShooterCharMovement) {
 		ShooterCharMovement->SetJetpack(true);
 
-		if(NC_JetpackFXComponent)
+		if(!NC_JetpackFXComponent)
+		{
+			ResetJetpackFXComponent();
+		}
+		if (NC_JetpackFXComponent)
 			NC_JetpackFXComponent->Activate();
 	}
 }
@@ -1208,6 +1216,10 @@ void AShooterCharacter::OnJetpackStop()
 
 		ShooterCharMovement->SetJetpack(false);
 
+		if (!NC_JetpackFXComponent)
+		{
+			ResetJetpackFXComponent();
+		}
  		if (NC_JetpackFXComponent)
 			NC_JetpackFXComponent->Deactivate();
 	}

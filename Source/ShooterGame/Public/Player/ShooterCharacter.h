@@ -258,8 +258,11 @@ class AShooterCharacter : public ACharacter
 	/** Updates abilities cooldowns per second */
 	bool CanTimeRewind();
 
-	/** Updates Jetpack Sound and FX */
+	/** Updates Jetpack Sound */
 	void UpdateJetpackSound();
+
+	/** Init Jetpack FX */
+	void ResetJetpackFXComponent();
 
 
 	//////////////////////////////////////////////////////////////////////////
