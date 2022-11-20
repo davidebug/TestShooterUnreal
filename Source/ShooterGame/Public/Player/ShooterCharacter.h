@@ -19,6 +19,8 @@ class AShooterCharacter : public ACharacter
 
 	virtual void BeginDestroy() override;
 
+	virtual void BeginPlay() override;
+
 	/** spawn inventory, setup initial variables */
 	virtual void PostInitializeComponents() override;
 
@@ -255,6 +257,10 @@ class AShooterCharacter : public ACharacter
 
 	/** Updates abilities cooldowns per second */
 	bool CanTimeRewind();
+
+	/** Updates Jetpack Sound and FX */
+	void UpdateJetpackSound();
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// Reading data
@@ -525,7 +531,10 @@ public:
 		int SavedPositionsInterval;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		UNiagaraSystem* NS_JetpackEffect;
+		UNiagaraSystem* NS_JetpackFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		UNiagaraComponent* NC_JetpackFXComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		USoundBase* SB_JetpackSound;
@@ -624,8 +633,6 @@ protected:
 
 
 protected:
-
-	UNiagaraComponent* NC_JetpackEffectComponent;
 
 	/** Returns Mesh1P subobject **/
 	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }

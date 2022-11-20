@@ -11,6 +11,7 @@
 #include "AudioThread.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 
 static int32 NetVisualizeRelevancyTestPoints = 0;
 FAutoConsoleVariableRef CVarNetVisualizeRelevancyTestPoints(
@@ -120,7 +121,30 @@ void AShooterCharacter::PostInitializeComponents()
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, RespawnSound, GetActorLocation());
 		}
+
+		//Initialize JetpackFX
+		if (NS_JetpackFX) {
+
+			USceneComponent* JetpackComponent = GetMesh()->GetChildComponent(0);
+
+				UNiagaraComponent* tmp =
+					UNiagaraFunctionLibrary::SpawnSystemAttached(NS_JetpackFX, JetpackComponent, NAME_None, FVector(0.f), FRotator(0.f),
+						EAttachLocation::Type::KeepRelativeOffset, false, false);
+
+				NC_JetpackFXComponent = tmp;
+
+		}
+
 	}
+	
+}
+
+void AShooterCharacter::BeginPlay() {
+
+	Super::BeginPlay();
+
+	
+
 }
 
 void AShooterCharacter::Destroyed()
@@ -142,6 +166,7 @@ void AShooterCharacter::PawnClientRestart()
 	// set team colors for 1st person view
 	UMaterialInstanceDynamic* Mesh1PMID = Mesh1P->CreateAndSetMaterialInstanceDynamic(0);
 	UpdateTeamColors(Mesh1PMID);
+
 }
 
 void AShooterCharacter::PossessedBy(class AController* InController)
@@ -1095,13 +1120,8 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 
 	if (ShooterCharacterMovement)
 	{
+
 		if (bJetpackOn && CanJetpack()) {
-
-			if (NS_JetpackEffect)
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_JetpackEffect, GetActorLocation());
-
-			if (SB_JetpackSound)
-				UGameplayStatics::PlaySoundAtLocation(this, SB_JetpackSound, GetActorLocation());
 			
 			ShooterCharacterMovement->DoJetpack();
 			JetpackCurrentEnergy--;
@@ -1165,28 +1185,33 @@ void AShooterCharacter::OnTeleportTriggered() {
 		UGameplayStatics::PlaySoundAtLocation(this, SB_TeleportSound, GetActorLocation());
 
 	if (NS_AbilityEffect)
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_JetpackEffect, GetActorLocation());
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_AbilityEffect, GetActorLocation());
 }
 
 void AShooterCharacter::OnJetpackStart()
 {
+
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+
 	if (ShooterCharMovement) {
-		bJetpackOn = true;
 		ShooterCharMovement->SetJetpack(true);
+
+		if(NC_JetpackFXComponent)
+			NC_JetpackFXComponent->Activate();
 	}
-	//TODO (Decrease jetpack bar, animation & sound)
 }
 
 void AShooterCharacter::OnJetpackStop()
 {
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
-		bJetpackOn = false;
+
 		ShooterCharMovement->SetJetpack(false);
+
+ 		if (NC_JetpackFXComponent)
+			NC_JetpackFXComponent->Deactivate();
 	}
-	UE_LOG(LogTemp, Warning, TEXT("JETPACK STOP"));
-	//TODO (Decrease jetpack bar, animation & sound)
+	
 }
 
 bool AShooterCharacter::CanJetpack() {
@@ -1209,7 +1234,7 @@ void AShooterCharacter::OnTimeRewindStart()
 		if (SB_TimeRewindSound)
 			UGameplayStatics::PlaySoundAtLocation(this, SB_TimeRewindSound, GetActorLocation(), 2.0f, 2.0f);
 		if (NS_AbilityEffect)
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_JetpackEffect, GetActorLocation());
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_AbilityEffect, GetActorLocation());
 	}
 }
 
@@ -1221,7 +1246,7 @@ void AShooterCharacter::OnTimeRewindStop()
 			ShooterCharMovement->SetTimeRewind(false);
 
 			if (NS_AbilityEffect)
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_JetpackEffect, GetActorLocation());
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_AbilityEffect, GetActorLocation());
 		}
 
 }
@@ -1342,8 +1367,7 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 		}
 
 		UpdateRunSounds();
-		UpdateAbilitiesCooldowns(DeltaSeconds);
-
+		UpdateJetpackSound();
 	}
 
 	const APlayerController* PC = Cast<APlayerController>(GetController());
@@ -1365,12 +1389,25 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 		}
 	}
 
+	/// NEW ABILITIES
+
 	if(!bPressedTimeRewind)
 		UpdateSavedPositions();
 	else {
 		UShooterCharacterMovement* ShooterCharacterMovement =
 			Cast<UShooterCharacterMovement>(GetCharacterMovement());
 		ShooterCharacterMovement->DoTimeRewind(DeltaSeconds);
+	}
+
+	UpdateAbilitiesCooldowns(DeltaSeconds);
+}
+
+void AShooterCharacter::UpdateJetpackSound() {
+	
+	if (bJetpackOn) {
+		//Sound should not be handled here but it's needed to make the "jetpack" effect
+		if (SB_JetpackSound)
+			UGameplayStatics::PlaySoundAtLocation(this, SB_JetpackSound, GetActorLocation());
 	}
 
 }
@@ -1397,6 +1434,7 @@ void AShooterCharacter::OnStartJump()
 		bPressedJump = true;
 		if (JumpCurrentCount > 0 && CanJetpack())
 		{
+			bJetpackOn = true;
 			OnJetpackStart();
 		}
 	}
@@ -1404,8 +1442,10 @@ void AShooterCharacter::OnStartJump()
 
 void AShooterCharacter::OnStopJump()
 {
-	if (bJetpackOn)
+	if (bJetpackOn) {
+		bJetpackOn = false;
 		OnJetpackStop();
+	}
 	bPressedJump = false;
  	StopJumping();
 }

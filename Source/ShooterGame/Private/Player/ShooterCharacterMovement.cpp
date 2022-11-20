@@ -69,6 +69,7 @@ bool UShooterCharacterMovement::DoTeleport()
 bool UShooterCharacterMovement::DoJetpack()
 {
 	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
+
 	if (ShooterCharacterOwner) {
 		Velocity.Z = ShooterCharacterOwner->JetpackVelocity;
 		return true;
@@ -147,6 +148,7 @@ void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 		}
 
 		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
+			ShooterCharacter->bJetpackOn = bJetpackOn;
 			if (bJetpackOn)
 				ShooterCharacter->OnJetpackStart();
 			else
