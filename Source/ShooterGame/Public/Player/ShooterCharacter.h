@@ -220,13 +220,17 @@ class AShooterCharacter : public ACharacter
 	void OnTeleportPressed();
 
 	/** Sets the teleport as Done */
-	void OnTeleportTriggered();
+	void OnTeleportDone();
 
 	/** Handles the Jetpack and middle air movement when double jump is triggered */
-	void OnJetpackStart();
+	void OnJetpackChange(bool newVal);
 
-	/** Stops the jetpack when on ground */
-	void OnJetpackStop();
+	/** Starts Jetpacks with sound and fx */
+	void StartJetpack();
+
+
+	/** Stops jetpack with sound and fx */
+	void StopJetpack();
 
 	/** Checks if there is enough energy for jetpacking */
 	bool CanJetpack();
@@ -258,11 +262,21 @@ class AShooterCharacter : public ACharacter
 	/** Updates abilities cooldowns per second */
 	bool CanTimeRewind();
 
+	/** Sets time rewind ability ON or OFF */
+	void SetTimeRewind(bool timeRewind);
+
 	/** Updates Jetpack Sound */
 	void UpdateJetpackSound();
 
 	/** Init Jetpack FX */
 	void ResetJetpackFXComponent();
+
+	/** Hides player's Mesh in game */
+	void HidePlayerInGame();
+
+	/** Shows player's Mesh in game */
+	void ShowPlayerInGame();
+
 
 
 	//////////////////////////////////////////////////////////////////////////

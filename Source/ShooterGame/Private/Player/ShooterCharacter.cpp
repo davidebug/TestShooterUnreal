@@ -79,7 +79,7 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	JetpackVelocity = 500.0f;
 	bPressedTeleport = false;
 	bPressedTimeRewind = false;
-	MaxPositionsSaved = 100;
+	MaxPositionsSaved = 50;
 	SavedPositionsInterval = 5;
 	NotSavedPositions = 0;
 	TeleportCooldown = 6;
@@ -1165,64 +1165,77 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 void AShooterCharacter::OnTeleportPressed()
 {
 	if (CanTeleport()) {
+
+		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+
 		AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 		if (MyPC && MyPC->IsGameInputAllowed())
 		{
-			UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-			if (ShooterCharMovement) {
-				bPressedTeleport = true;
-				ShooterCharMovement->DoTeleport();
-				StartTeleportCooldown();
-			}
+
+			////////// AN IMPLEMENTATION USING RPCs ////////////////
+			//if (!HasAuthority())
+			//	ShooterCharMovement->ServerSetTeleportRPC(true);
+
+			//ShooterCharMovement->SetTeleportMovement(true);
+
+			ShooterCharMovement->execSetTeleport(true);
+			if (SB_TeleportSound)
+				UGameplayStatics::PlaySoundAtLocation(this, SB_TeleportSound, GetActorLocation());
 		}
+
 	}
-	}
+}
 
 bool AShooterCharacter::CheckTeleportInput() const{
 	return bPressedTeleport;
 }
 
-void AShooterCharacter::OnTeleportTriggered() {
-	bPressedTeleport = false;
-
-	if (SB_TeleportSound)
-		UGameplayStatics::PlaySoundAtLocation(this, SB_TeleportSound, GetActorLocation());
-
-	if (NS_AbilityEffect)
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_AbilityEffect, GetActorLocation());
-}
-
-void AShooterCharacter::OnJetpackStart()
-{
+void AShooterCharacter::OnTeleportDone() {
 
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-
-	if (ShooterCharMovement) {
-		ShooterCharMovement->SetJetpack(true);
-
-		if(!NC_JetpackFXComponent)
-		{
-			ResetJetpackFXComponent();
-		}
-		if (NC_JetpackFXComponent)
-			NC_JetpackFXComponent->Activate();
-	}
+	ShooterCharMovement->SetTeleportMovement(false);
+	StartTeleportCooldown();
 }
 
-void AShooterCharacter::OnJetpackStop()
+void AShooterCharacter::OnJetpackChange(bool newVal)
 {
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
 
-		ShooterCharMovement->SetJetpack(false);
+		//////////// AN IMPLEMENTATION USING RPCs ////////////////
+		/*if (!HasAuthority())
+			ShooterCharMovement->ServerSetJetpackRPC(newVal);
 
-		if (!NC_JetpackFXComponent)
-		{
-			ResetJetpackFXComponent();
-		}
- 		if (NC_JetpackFXComponent)
-			NC_JetpackFXComponent->Deactivate();
+		ShooterCharMovement->SetJetpackMovement(newVal);*/
+
+		ShooterCharMovement->execSetJetpack(newVal);
 	}
+}
+
+void AShooterCharacter::StartJetpack()
+{
+	bJetpackOn = true;
+
+	if (!NC_JetpackFXComponent)
+	{
+		ResetJetpackFXComponent();
+	}
+	if (NC_JetpackFXComponent)
+		NC_JetpackFXComponent->Activate();
+}
+
+
+void AShooterCharacter::StopJetpack()
+{
+
+	bJetpackOn = false;
+
+	if (!NC_JetpackFXComponent)
+	{
+		ResetJetpackFXComponent();
+	}
+	if (NC_JetpackFXComponent)
+		NC_JetpackFXComponent->Deactivate();
 	
 }
 
@@ -1233,34 +1246,48 @@ bool AShooterCharacter::CanJetpack() {
 void AShooterCharacter::OnTimeRewindStart()
 {
 	if(CanTimeRewind()) {
-		AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
-		if (MyPC && MyPC->IsGameInputAllowed())
-		{
-			UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-			if (ShooterCharMovement) {
-				bPressedTimeRewind = true;
-				ShooterCharMovement->SetTimeRewind(true);
-				StartTimeRewindCooldown();
-			}
+		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+		if (ShooterCharMovement) {
+
+			//////////// AN IMPLEMENTATION USING RPCs ////////////////
+			/*if (!HasAuthority())
+				ShooterCharMovement->ServerSetTimeRewindRPC(true);
+
+			ShooterCharMovement->SetTimeRewindMovement(true);*/
+
+			ShooterCharMovement->execSetTimeRewind(true);
 		}
+	}
+
+}
+
+void AShooterCharacter::SetTimeRewind(bool timeRewind) {
+
+	bPressedTimeRewind = timeRewind;
+	if(!timeRewind)
+		StartTimeRewindCooldown();
+	else
 		if (SB_TimeRewindSound)
 			UGameplayStatics::PlaySoundAtLocation(this, SB_TimeRewindSound, GetActorLocation(), 2.0f, 2.0f);
-		if (NS_AbilityEffect)
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_AbilityEffect, GetActorLocation());
-	}
+
 }
 
 void AShooterCharacter::OnTimeRewindStop()
 {
-		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-		if (ShooterCharMovement) {
-			bPressedTimeRewind = false;
-			ShooterCharMovement->SetTimeRewind(false);
+	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+	if (ShooterCharMovement) {
 
-			if (NS_AbilityEffect)
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_AbilityEffect, GetActorLocation());
-		}
 
+		//////////// AN IMPLEMENTATION USING RPCs ////////////////
+		/*if (!HasAuthority())
+			ShooterCharMovement->ServerSetTimeRewindRPC(false);
+
+		ShooterCharMovement->SetTimeRewindMovement(false);*/
+
+		ShooterCharMovement->execSetTimeRewind(false);
+	}
+
+	ShowPlayerInGame();
 }
 
 bool AShooterCharacter::IsTimeRewinding() const
@@ -1271,8 +1298,9 @@ bool AShooterCharacter::IsTimeRewinding() const
 
 void AShooterCharacter::UpdateSavedPositions()
 {
-	//Updates Saved Positions Array every interval
-	//The interval determines the Speed of the Ability
+	// Updates Saved Positions Array every interval
+	// The interval determines the Speed of the Ability
+
 	if (NotSavedPositions >= SavedPositionsInterval) {
 		SavedPositionsArray.Add(GetActorLocation());
 		if (SavedPositionsArray.Num() > MaxPositionsSaved) {
@@ -1318,8 +1346,8 @@ FVector AShooterCharacter::PopLastPositionSaved()
 {
 	if(SavedPositionsArray.Num() > 0)
 		return SavedPositionsArray.Pop();
-	
-	return GetActorLocation();
+
+	return FVector(0,0,0);
 }
 
 bool AShooterCharacter::IsRunning() const
@@ -1334,7 +1362,9 @@ bool AShooterCharacter::IsRunning() const
 
 void AShooterCharacter::Tick(float DeltaSeconds)
 {
+
 	Super::Tick(DeltaSeconds);
+	
 
 	if (bWantsToRunToggled && !IsRunning())
 	{
@@ -1401,14 +1431,39 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 		}
 	}
 
-	/// NEW ABILITIES
+	/////////////// NEW ABILITIES ////////////////////
 
-	if(!bPressedTimeRewind)
+	
+	if(bJetpackOn)
+		UE_LOG(LogTemp, Warning, TEXT("JETPACK"));
+	if (bPressedTimeRewind)
+		UE_LOG(LogTemp, Warning, TEXT("TIMEREW"));
+	if (bPressedTeleport)
+		UE_LOG(LogTemp, Warning, TEXT("TELEPORT"));
+
+
+		if (!bJetpackOn && bLocallyControlled)
+			UE_LOG(LogTemp, Warning, TEXT("NOT JETPACK"));
+		if (!bPressedTimeRewind)
+			UE_LOG(LogTemp, Warning, TEXT("NOT TIMEREW"));
+		if (!bPressedTeleport)
+			UE_LOG(LogTemp, Warning, TEXT("NOT TELEPORT"));
+	
+
+	if (!bPressedTimeRewind) {
 		UpdateSavedPositions();
-	else {
+		if (IsHidden())
+			ShowPlayerInGame();
+	}
+	else {	
 		UShooterCharacterMovement* ShooterCharacterMovement =
 			Cast<UShooterCharacterMovement>(GetCharacterMovement());
 		ShooterCharacterMovement->DoTimeRewind(DeltaSeconds);
+
+		HidePlayerInGame();
+
+		if (NS_AbilityEffect)
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NS_AbilityEffect, GetActorLocation());
 	}
 
 	UpdateAbilitiesCooldowns(DeltaSeconds);
@@ -1422,6 +1477,16 @@ void AShooterCharacter::UpdateJetpackSound() {
 			UGameplayStatics::PlaySoundAtLocation(this, SB_JetpackSound, GetActorLocation());
 	}
 
+}
+
+void AShooterCharacter::HidePlayerInGame() {
+	SetActorHiddenInGame(true);
+	GetWeapon()->SetActorHiddenInGame(true);
+}
+
+void AShooterCharacter::ShowPlayerInGame() {
+	GetWeapon()->SetActorHiddenInGame(false);
+	SetActorHiddenInGame(false);
 }
 
 void AShooterCharacter::BeginDestroy()
@@ -1446,8 +1511,7 @@ void AShooterCharacter::OnStartJump()
 		bPressedJump = true;
 		if (JumpCurrentCount > 0 && CanJetpack())
 		{
-			bJetpackOn = true;
-			OnJetpackStart();
+			OnJetpackChange(true);
 		}
 	}
 }
@@ -1455,8 +1519,7 @@ void AShooterCharacter::OnStartJump()
 void AShooterCharacter::OnStopJump()
 {
 	if (bJetpackOn) {
-		bJetpackOn = false;
-		OnJetpackStop();
+		OnJetpackChange(false);
 	}
 	bPressedJump = false;
  	StopJumping();

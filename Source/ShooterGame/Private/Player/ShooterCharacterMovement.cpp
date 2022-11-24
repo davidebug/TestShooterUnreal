@@ -35,7 +35,7 @@ float UShooterCharacterMovement::GetMaxSpeed() const
 	return MaxSpeed;
 }
 
-
+#pragma region AbilitiesImplementation
 
 ///////////////////////////////////////////
 // Teleport Implementation
@@ -51,8 +51,6 @@ bool UShooterCharacterMovement::DoTeleport()
 		FVector Distance = ShooterCharacterOwner->GetActorForwardVector() * 1000;
 		NewLocation += Distance;
 
-		UE_LOG(LogTemp, Warning, TEXT("TELEPORT APPLIED"));
-
 		//Using of TeleportTo function for better smoothing
 		if (ShooterCharacterOwner->TeleportTo(NewLocation,
 			ShooterCharacterOwner->GetActorRotation()))
@@ -62,6 +60,19 @@ bool UShooterCharacterMovement::DoTeleport()
 	return false;
 
 }
+
+void UShooterCharacterMovement::execSetTeleport(bool bTeleportInput)
+{
+	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
+	if (ShooterCharacterOwner) {
+		ShooterCharacterOwner->bPressedTeleport = bTeleportInput;
+		if (bTeleportInput) {
+			DoTeleport();
+		}
+
+	}
+}
+
 
 ///////////////////////////////////////////
 // Jetpack Implementation
@@ -79,8 +90,7 @@ bool UShooterCharacterMovement::DoJetpack()
 
 }
 
-
-void UShooterCharacterMovement::SetJetpack(bool bJetpackOn)
+void UShooterCharacterMovement::execSetJetpack(bool bJetpackOn)
 {
 	if (bJetpackOn) {
 		SetMovementMode(MOVE_Falling);
@@ -89,13 +99,38 @@ void UShooterCharacterMovement::SetJetpack(bool bJetpackOn)
 	else {
 		AirControl = 0.05f;
 	}
+
+	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
+	if (ShooterCharacterOwner) {
+		if (bJetpackOn)
+			ShooterCharacterOwner->StartJetpack();
+		else {
+			ShooterCharacterOwner->StopJetpack();
+		}
+	}
 }
 
 
 
-void UShooterCharacterMovement::SetTimeRewind(bool bTimeRewind)
+///////////////////////////////////////////
+// TimeRewind Implementation
+
+void UShooterCharacterMovement::DoTimeRewind(float DeltaTime)
 {
 	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
+	FVector NewPosition = ShooterCharacterOwner->PopLastPositionSaved();
+	FVector EndingPosition = FVector(0,0,0);
+	
+	if(NewPosition != EndingPosition){
+		FRotator Orientation = ShooterCharacterOwner->GetActorRotation();
+ 		ShooterCharacterOwner->SetActorLocationAndRotation(NewPosition,Orientation);
+	}
+	else
+		ShooterCharacterOwner->OnTimeRewindStop();
+}
+
+void UShooterCharacterMovement::execSetTimeRewind(bool bTimeRewind)
+{
 	if (bTimeRewind) {
 		SetMovementMode(MOVE_Falling);
 		AirControl = 0;
@@ -104,34 +139,148 @@ void UShooterCharacterMovement::SetTimeRewind(bool bTimeRewind)
 		SetMovementMode(MOVE_Walking);
 		AirControl = 0.05f;
 	}
-}
 
-void UShooterCharacterMovement::DoTimeRewind(float DeltaTime)
-{
 	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
-	FVector NewPosition = ShooterCharacterOwner->PopLastPositionSaved();
-	FVector ActualPosition = GetActorLocation();
-	if(NewPosition != GetActorLocation()){
-		FRotator Orientation = ShooterCharacterOwner->GetActorRotation();
-		ShooterCharacterOwner->SetActorLocationAndRotation(NewPosition,Orientation);
+	if (ShooterCharacterOwner) {
+		ShooterCharacterOwner->SetTimeRewind(bTimeRewind);
 	}
-	else
-		ShooterCharacterOwner->OnTimeRewindStop();
 }
 
 
-//////////////////////////////////////
-// UNPACKING Method
+#pragma endregion
+
+#pragma region Networking(OldImplementation)
+
+void UShooterCharacterMovement::SetTimeRewindMovement(bool bTimeRewind)
+{
+	execSetTimeRewind(bTimeRewind);
+
+	if (!GetOwner() || !GetPawnOwner())
+		return;
+
+	if (!GetOwner()->HasAuthority() && GetPawnOwner()->IsLocallyControlled())
+	{
+		ServerSetTimeRewindRPC(bTimeRewind);
+	}
+	else if (GetOwner()->HasAuthority() && !GetPawnOwner()->IsLocallyControlled())
+	{
+		ClientSetTimeRewindRPC(bTimeRewind);
+	}
+}
+
+void UShooterCharacterMovement::SetJetpackMovement(bool bJetpackOn)
+{
+
+	execSetJetpack(bJetpackOn);
+
+	if (!GetOwner() || !GetPawnOwner())
+		return;
+
+	if (!GetOwner()->HasAuthority() && GetPawnOwner()->IsLocallyControlled())
+	{
+		ServerSetJetpackRPC(bJetpackOn);
+	}
+	else if (GetOwner()->HasAuthority() && !GetPawnOwner()->IsLocallyControlled())
+	{
+		ClientSetJetpackRPC(bJetpackOn);
+	}
+}
+
+void UShooterCharacterMovement::SetTeleportMovement(bool bTeleportInput)
+{
+
+	execSetTeleport(bTeleportInput);
+
+	if (!GetOwner() || !GetPawnOwner())
+		return;
+
+	if (!GetOwner()->HasAuthority() && GetPawnOwner()->IsLocallyControlled())
+	{
+		ServerSetTeleportRPC(bTeleportInput);
+	}
+	else if (GetOwner()->HasAuthority() && !GetPawnOwner()->IsLocallyControlled())
+	{
+		ClientSetTeleportRPC(bTeleportInput);
+	}
+}
+
+#pragma region Abilities RPCs
+
+/// JETPACK RPCs ////
+
+
+void UShooterCharacterMovement::ClientSetJetpackRPC_Implementation(bool bJetpackOn)
+{
+	execSetJetpack(bJetpackOn);
+}
+
+bool UShooterCharacterMovement::ServerSetJetpackRPC_Validate(bool bJetpackOn)
+{
+	return true;
+}
+
+void UShooterCharacterMovement::ServerSetJetpackRPC_Implementation(bool bJetpackOn)
+{
+	execSetJetpack(bJetpackOn);
+}
+
+/// TELEPORT RPCs ///
+
+void UShooterCharacterMovement::ClientSetTeleportRPC_Implementation(bool bTeleportInput)
+{
+	execSetTeleport(bTeleportInput);
+}
+
+bool UShooterCharacterMovement::ServerSetTeleportRPC_Validate(bool bTeleportInput)
+{
+	return true;
+}
+
+void UShooterCharacterMovement::ServerSetTeleportRPC_Implementation(bool bTeleportInput)
+{
+	execSetTeleport(bTeleportInput);
+}
+
+/// TIMEREWIND RPCs ///
+
+void UShooterCharacterMovement::ClientSetTimeRewindRPC_Implementation(bool bTimeRewind)
+{
+	execSetTimeRewind(bTimeRewind);
+}
+
+bool UShooterCharacterMovement::ServerSetTimeRewindRPC_Validate(bool bTimeRewind)
+{
+	return true;
+}
+
+void UShooterCharacterMovement::ServerSetTimeRewindRPC_Implementation(bool bTimeRewind)
+{
+	execSetTimeRewind(bTimeRewind);
+}
+
+
+
+#pragma endregion
+
+#pragma endregion
+
+
+#pragma region NetworkPrediction
+
+
+////////////////////// IMPLEMENTATION WITHOUT SPECIFIC RPCs /////////////////////
+// UNPACKING Method (New RPCs implementation)
 
 void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 {
+
 	Super::UpdateFromCompressedFlags(Flags);
 
 	// Unpack the SavedMove arrived
 	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(CharacterOwner);
 
 	const bool bPressedTeleport = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_0) != 0);
-	
+
 	// Jetpack is handled per Tick so is set the variable only
 	const bool bJetpackOn = ((Flags & FSavedMove_ShooterCharacter::FLAG_Custom_1) != 0);
 
@@ -140,33 +289,22 @@ void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 
 	if (CharacterOwner->GetLocalRole() == ROLE_Authority)
 	{
-		// Applies the input abilities contained in the move
-		ShooterCharacter->bPressedTeleport = bPressedTeleport;
+
 		if (bPressedTeleport) {
-			DoTeleport();
-			ShooterCharacter->OnTeleportTriggered();
+			execSetTeleport(bPressedTeleport);
+			ShooterCharacter->OnTeleportDone();
 		}
 
 		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
-			ShooterCharacter->bJetpackOn = bJetpackOn;
-			if (bJetpackOn)
-				ShooterCharacter->OnJetpackStart();
-			else
-				ShooterCharacter->OnJetpackStop();
+			execSetJetpack(bJetpackOn);
 		}
 
 		if (ShooterCharacter->bPressedTimeRewind != bPressedTimeRewind) {
-			if (bPressedTimeRewind)
-				ShooterCharacter->OnTimeRewindStart();
-			else
-				ShooterCharacter->OnTimeRewindStop();
-
+			execSetTimeRewind(bPressedTimeRewind);
 		}
 	}
 }
 
-
-#pragma region NetworkPrediction
 
 /////////////////////////////////////////
 //  NetworkPredictionData_Client Methods
@@ -204,6 +342,7 @@ FSavedMovePtr FNetworkPredictionData_Client_ShooterCharacter::AllocateNewMove()
 void FSavedMove_ShooterCharacter::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
 {
 	// Method used to set a new move
+
 	Super::SetMoveFor(Character, InDeltaTime, NewAccel, ClientData);
 	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(Character);
 	if (ShooterCharacter)
@@ -212,8 +351,8 @@ void FSavedMove_ShooterCharacter::SetMoveFor(ACharacter* Character, float InDelt
 		bPressedTeleport = ShooterCharacter->bPressedTeleport;
 
 		if (bPressedTeleport) {
-			//If teleport has been pressed and is contained in SavedMove, remove the local ability trigger
-			ShooterCharacter->OnTeleportTriggered();
+			//If teleport has been pressed and is saved in SavedMove, remove the local ability trigger
+			ShooterCharacter->OnTeleportDone();
 		}
 
 		// Set if jetpack is on or not, delegates the rest to ShooterCharacter's Tick
@@ -228,40 +367,25 @@ void FSavedMove_ShooterCharacter::SetMoveFor(ACharacter* Character, float InDelt
 
 void FSavedMove_ShooterCharacter::PrepMoveFor(ACharacter* Character)
 {
-	// Method used to make the correction
-
+	// Move used to make the correction
 	Super::PrepMoveFor(Character);
+
 	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(Character);
+	UShooterCharacterMovement* ShooterCharacterMovement = Cast<UShooterCharacterMovement>(Character->GetCharacterMovement());
 	if (ShooterCharacter)
-	{
-		
-		
-		UShooterCharacterMovement* ShooterCharacterMovement = 
-			Cast<UShooterCharacterMovement>(ShooterCharacter->GetCharacterMovement());
+	{		
+				if (bPressedTeleport) {
+					ShooterCharacterMovement->DoTeleport();
+				}
 
-		//Set teleport on and execute it for the correction
-		ShooterCharacter->bPressedTeleport = bPressedTeleport;
-		if (bPressedTeleport) {
-			ShooterCharacterMovement->DoTeleport();
-			ShooterCharacter->OnTeleportTriggered();
-		}
+				if (ShooterCharacter->bJetpackOn != bJetpackOn) {
+					ShooterCharacterMovement->execSetJetpack(bJetpackOn);
+				}
 
-		//Set jetpack then leave it to ShooterCharacter's Tick
-		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
-			ShooterCharacter->bJetpackOn = bJetpackOn;
-			if (bJetpackOn)
-				ShooterCharacter->OnJetpackStart();
-			else
-				ShooterCharacter->OnJetpackStop();
-		}
 
-		//Set Time Rewind then leave it to ShooterCharacter's Tick
-		if (ShooterCharacter->bPressedTimeRewind != bPressedTimeRewind) {
-			if (bPressedTimeRewind)
-				ShooterCharacter->OnTimeRewindStart();
-			else
-				ShooterCharacter->OnTimeRewindStop();
-		}
+				if (ShooterCharacter->bPressedTimeRewind != bPressedTimeRewind) {
+						ShooterCharacterMovement->execSetTimeRewind(bPressedTimeRewind);
+				}
 	}
 }
 
@@ -295,7 +419,6 @@ uint8 FSavedMove_ShooterCharacter::GetCompressedFlags() const
 
 	if (bPressedJump)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("FLAG: PRESSED JUMP"));
 		Result |= FLAG_JumpPressed;
 	}
 
@@ -308,7 +431,6 @@ uint8 FSavedMove_ShooterCharacter::GetCompressedFlags() const
 
 	if (bPressedTeleport)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("FLAG: SET TELEPORT"));
 		Result |= FLAG_Custom_0;
 	}
 	if (bJetpackOn)

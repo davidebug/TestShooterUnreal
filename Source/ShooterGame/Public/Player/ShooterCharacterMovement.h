@@ -27,23 +27,61 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		/* Sets the Jetpack values */
-		void SetJetpack(bool bJetpackOn);
+		void SetJetpackMovement(bool bJetpackOn);
 
 	UFUNCTION(BlueprintCallable)
 		/* Executes the jetpack locally */
 		virtual bool DoJetpack();
 
 	UFUNCTION(BlueprintCallable)
+		/* Sets the Jetpack values */
+		void SetTeleportMovement(bool bTeleportInput);
+
+	UFUNCTION(BlueprintCallable)
 		/* Executes the teleport locally */
 		virtual bool DoTeleport();
 
 	UFUNCTION(BlueprintCallable)
-		/* Sets the TimeRewind values */
-		virtual void SetTimeRewind(bool bTimeRewind);
+		/* Sets the TimeRewind movement values */
+		virtual void SetTimeRewindMovement(bool bTimeRewind);
 
 	UFUNCTION(BlueprintCallable)
 		/* Executes the time rewind locally */
 		virtual void DoTimeRewind(float DeltaTime);
+
+
+	#pragma region Abilities RPCs
+
+		//Jetpack
+		void execSetJetpack(bool bJetpackOn);
+
+	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
+		void ServerSetJetpackRPC(bool bJetpackOn);
+
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+		void ClientSetJetpackRPC(bool bJetpackOn);
+
+	//Teleport
+	void execSetTeleport(bool bTeleportInput);
+
+	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
+		void ServerSetTeleportRPC(bool bTeleportInput);
+
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+		void ClientSetTeleportRPC(bool bTeleportInput);
+
+	//Time Rewind
+	void execSetTimeRewind(bool bTimeRewind);
+
+	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
+		void ServerSetTimeRewindRPC(bool bTimeRewind);
+
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+		void ClientSetTimeRewindRPC(bool bTimeRewind);
+
+	#pragma endregion
+
+
 };
 
 
