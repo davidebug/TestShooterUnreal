@@ -35,7 +35,7 @@ float UShooterCharacterMovement::GetMaxSpeed() const
 	return MaxSpeed;
 }
 
-#pragma region AbilitiesImplementation
+#pragma region NewAbilitiesImplementation
 
 ///////////////////////////////////////////
 // Teleport Implementation
@@ -149,7 +149,7 @@ void UShooterCharacterMovement::execSetTimeRewind(bool bTimeRewind)
 
 #pragma endregion
 
-#pragma region Networking(OldImplementation)
+#pragma region Networking
 
 void UShooterCharacterMovement::SetTimeRewindMovement(bool bTimeRewind)
 {
@@ -264,12 +264,11 @@ void UShooterCharacterMovement::ServerSetTimeRewindRPC_Implementation(bool bTime
 
 #pragma endregion
 
-
 #pragma region NetworkPrediction
 
 
-////////////////////// IMPLEMENTATION WITHOUT SPECIFIC RPCs /////////////////////
-// UNPACKING Method (New RPCs implementation)
+//////////////////////////////////////////
+// UNPACKING Method
 
 void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 {

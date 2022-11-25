@@ -17,6 +17,8 @@ class AShooterCharacter : public ACharacter
 {
 	GENERATED_UCLASS_BODY()
 
+#pragma region ShooterCharacterBase
+
 	virtual void BeginDestroy() override;
 
 	virtual void BeginPlay() override;
@@ -207,77 +209,8 @@ class AShooterCharacter : public ACharacter
 	/** player released run action */
 	void OnStopRunning();
 
-	/////////////////////////////////////////////////////////////////////////
-	// ADDED ABILITIES
-
 	/** Checks jump input and adds jetpack implementation */
 	virtual void CheckJumpInput(float DeltaTime) override;
-
-	/** Checks teleport input */
-	bool CheckTeleportInput() const;
-
-	/** Applies the teleport when Teleport key is pressed */
-	void OnTeleportPressed();
-
-	/** Sets the teleport as Done */
-	void OnTeleportDone();
-
-	/** Handles the Jetpack and middle air movement when double jump is triggered */
-	void OnJetpackChange(bool newVal);
-
-	/** Starts Jetpacks with sound and fx */
-	void StartJetpack();
-
-
-	/** Stops jetpack with sound and fx */
-	void StopJetpack();
-
-	/** Checks if there is enough energy for jetpacking */
-	bool CanJetpack();
-
-	/** Time Rewind ability start */
-	void OnTimeRewindStart();
-
-	/** Time Rewind ability is stopped */
-	void OnTimeRewindStop();
-
-	/** Updates saved positions */
-	void UpdateSavedPositions();
-
-	/** Gets the last position added in the array */
-	FVector PopLastPositionSaved();
-
-	/** Updates abilities cooldowns per second */
-	void UpdateAbilitiesCooldowns(float DeltaSeconds);
-
-	/** Updates abilities cooldowns per second */
-	void StartTeleportCooldown();
-
-	/** Updates abilities cooldowns per second */
-	void StartTimeRewindCooldown();
-
-	/** Updates abilities cooldowns per second */
-	bool CanTeleport();
-
-	/** Updates abilities cooldowns per second */
-	bool CanTimeRewind();
-
-	/** Sets time rewind ability ON or OFF */
-	void SetTimeRewind(bool timeRewind);
-
-	/** Updates Jetpack Sound */
-	void UpdateJetpackSound();
-
-	/** Init Jetpack FX */
-	void ResetJetpackFXComponent();
-
-	/** Hides player's Mesh in game */
-	void HidePlayerInGame();
-
-	/** Shows player's Mesh in game */
-	void ShowPlayerInGame();
-
-
 
 	//////////////////////////////////////////////////////////////////////////
 	// Reading data
@@ -328,11 +261,6 @@ class AShooterCharacter : public ACharacter
 	UFUNCTION(BlueprintCallable, Category = Pawn)
 	bool IsRunning() const;
 
-
-	/** Tells if time is rewinding or not */
-	UFUNCTION(BlueprintCallable, Category = Pawn)
-	bool IsTimeRewinding() const;
-
 	/** get camera view type */
 	UFUNCTION(BlueprintCallable, Category = Mesh)
 	virtual bool IsFirstPerson() const;
@@ -355,6 +283,7 @@ class AShooterCharacter : public ACharacter
 
 	/** Update the team color of all player meshes. */
 	void UpdateTeamColorsAllMIDs();
+
 private:
 
 	/** pawn mesh: 1st person view */
@@ -406,9 +335,6 @@ protected:
 
 	/** current firing state */
 	uint8 bWantsToFire : 1;
-
-	/** Current number of positions not saved in the SavedPositions Array */
-	int NotSavedPositions;
 
 	/** when low health effects should start */
 	float LowHealthPercentage;
@@ -492,80 +418,6 @@ public:
 	// Current health of the Pawn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = Health)
 	float Health;
-
-	///////////////////////////////////////////////////////////
-	// Useful variables for added abilities
-
-	/** Tells if teleport has been triggered or not */
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-		uint32 bPressedTeleport : 1;
-
-	/** Tells if Time Rewind has been triggered and is active or not */
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-		uint32 bPressedTimeRewind : 1;
-
-	/** Jetpack current energy pool */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		int JetpackCurrentEnergy;
-
-	/** Jetpack maximum energy pool */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		int JetpackMaxEnergy;
-
-	/** Tells if Jetpack is active or not */
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-		uint32 bJetpackOn : 1;
-
-	/** Jetpack velocity*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		float JetpackVelocity;
-
-	/** Teleport cooldown*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		float TeleportCooldown;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		float CurrentTeleportCooldown;
-
-	/** Time rewind cooldown*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		float TimeRewindCooldown;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		float CurrentTimeRewindCooldown;
-
-	/** Saved old positions of the character used for time rewinding */
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-		TArray<FVector> SavedPositionsArray;
-
-	/** Maximum number of saved old positions */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		int MaxPositionsSaved;
-
-	/** Interval of frames in which the character saves his positions in SavedPositionsArray
-	The Higher the interval is, the faster will be the speed of Time Rewind */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		int SavedPositionsInterval;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		UNiagaraSystem* NS_JetpackFX;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		UNiagaraComponent* NC_JetpackFXComponent;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		USoundBase* SB_JetpackSound;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		UNiagaraSystem* NS_AbilityEffect;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		USoundBase* SB_TeleportSound;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		USoundBase* SB_TimeRewindSound;
-
-
 
 	////////////////////////////////////////////////////////////
 	/** Take damage, handle death */
@@ -653,6 +505,159 @@ protected:
 
 	/** Returns Mesh1P subobject **/
 	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+
+#pragma endregion
+
+#pragma region NewAbilities
+
+public:
+	/** Checks teleport input */
+	bool CheckTeleportInput() const;
+
+	/** Applies the teleport when Teleport key is pressed */
+	void OnTeleportPressed();
+
+	/** Sets the teleport as Done */
+	void OnTeleportDone();
+
+	/** Handles the Jetpack and middle air movement when double jump is triggered */
+	void OnJetpackChange(bool newVal);
+
+	/** Starts Jetpacks with sound and fx */
+	void StartJetpack();
+
+
+	/** Stops jetpack with sound and fx */
+	void StopJetpack();
+
+	/** Checks if there is enough energy for jetpacking */
+	bool CanJetpack();
+
+	/** Time Rewind ability start */
+	void OnTimeRewindStart();
+
+	/** Time Rewind ability is stopped */
+	void OnTimeRewindStop();
+
+	/** Updates saved positions */
+	void UpdateSavedPositions();
+
+	/** Gets the last position added in the array */
+	FVector PopLastPositionSaved();
+
+	/** Updates abilities cooldowns per second */
+	void UpdateAbilitiesCooldowns(float DeltaSeconds);
+
+	/** Updates abilities cooldowns per second */
+	void StartTeleportCooldown();
+
+	/** Updates abilities cooldowns per second */
+	void StartTimeRewindCooldown();
+
+	/** Updates abilities cooldowns per second */
+	bool CanTeleport();
+
+	/** Updates abilities cooldowns per second */
+	bool CanTimeRewind();
+
+	/** Sets time rewind ability ON or OFF */
+	void SetTimeRewind(bool timeRewind);
+
+	/** Updates Jetpack Sound */
+	void UpdateJetpackSound();
+
+	/** Init Jetpack FX */
+	void ResetJetpackFXComponent();
+
+	/** Hides player's Mesh in game */
+	void HidePlayerInGame();
+
+	/** Shows player's Mesh in game */
+	void ShowPlayerInGame();
+
+	/** Tells if time is rewinding or not */
+	UFUNCTION(BlueprintCallable, Category = Pawn)
+		bool IsTimeRewinding() const;
+
+#pragma endregion
+
+#pragma region NewAbilitiesVariables
+
+public:
+	/** Tells if teleport has been triggered or not */
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		uint32 bPressedTeleport : 1;
+
+	/** Tells if Time Rewind has been triggered and is active or not */
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		uint32 bPressedTimeRewind : 1;
+
+	/** Jetpack current energy pool */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		int JetpackCurrentEnergy;
+
+	/** Jetpack maximum energy pool */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		int JetpackMaxEnergy;
+
+	/** Tells if Jetpack is active or not */
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		uint32 bJetpackOn : 1;
+
+	/** Jetpack velocity*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float JetpackVelocity;
+
+	/** Teleport cooldown*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float TeleportCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float CurrentTeleportCooldown;
+
+	/** Time rewind cooldown*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float TimeRewindCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		float CurrentTimeRewindCooldown;
+
+	/** Saved old positions of the character used for time rewinding */
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		TArray<FVector> SavedPositionsArray;
+
+	/** Maximum number of saved old positions */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		int MaxPositionsSaved;
+
+	/** Current number of positions not saved in the SavedPositions Array */
+	int NotSavedPositions;
+
+	/** Interval of frames in which the character saves his positions in SavedPositionsArray
+	The Higher the interval is, the faster will be the speed of Time Rewind */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		int SavedPositionsInterval;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		UNiagaraSystem* NS_JetpackFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		UNiagaraComponent* NC_JetpackFXComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		USoundBase* SB_JetpackSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		UNiagaraSystem* NS_AbilityEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		USoundBase* SB_TeleportSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		USoundBase* SB_TimeRewindSound;
+
+#pragma endregion
+
 };
 
 

@@ -14,46 +14,39 @@ class UShooterCharacterMovement : public UCharacterMovementComponent
 
 		virtual float GetMaxSpeed() const override;
 
-		/* Method for unpacking the flags from a SavedMove */
-		virtual void UpdateFromCompressedFlags(uint8 Flags) override;
-
-		/* Gets the prediction data client (ShooterCharacter) */
-		virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
-
 public:
 
-		////////////////////////////////////////////////////
-		//New Abilities added to UCharacterMovementComponent
-
-	UFUNCTION(BlueprintCallable)
-		/* Sets the Jetpack values */
-		void SetJetpackMovement(bool bJetpackOn);
-
+#pragma region NewAbilitiesImplementation
 	UFUNCTION(BlueprintCallable)
 		/* Executes the jetpack locally */
 		virtual bool DoJetpack();
 
-	UFUNCTION(BlueprintCallable)
-		/* Sets the Jetpack values */
-		void SetTeleportMovement(bool bTeleportInput);
+	//Jetpack
+	void execSetJetpack(bool bJetpackOn);
+
 
 	UFUNCTION(BlueprintCallable)
 		/* Executes the teleport locally */
 		virtual bool DoTeleport();
 
+	//Teleport
+	void execSetTeleport(bool bTeleportInput);
+
+
 	UFUNCTION(BlueprintCallable)
 		/* Sets the TimeRewind movement values */
 		virtual void SetTimeRewindMovement(bool bTimeRewind);
 
+	//Time Rewind
+	void execSetTimeRewind(bool bTimeRewind);
+
+#pragma endregion
+
+#pragma region Networking
+
 	UFUNCTION(BlueprintCallable)
-		/* Executes the time rewind locally */
-		virtual void DoTimeRewind(float DeltaTime);
-
-
-	#pragma region Abilities RPCs
-
-		//Jetpack
-		void execSetJetpack(bool bJetpackOn);
+		/* Sets the Jetpack values */
+		void SetJetpackMovement(bool bJetpackOn);
 
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 		void ServerSetJetpackRPC(bool bJetpackOn);
@@ -61,8 +54,11 @@ public:
 	UFUNCTION(Client, Reliable, BlueprintCallable)
 		void ClientSetJetpackRPC(bool bJetpackOn);
 
-	//Teleport
-	void execSetTeleport(bool bTeleportInput);
+
+
+	UFUNCTION(BlueprintCallable)
+		/* Sets the Jetpack values */
+		void SetTeleportMovement(bool bTeleportInput);
 
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 		void ServerSetTeleportRPC(bool bTeleportInput);
@@ -70,8 +66,10 @@ public:
 	UFUNCTION(Client, Reliable, BlueprintCallable)
 		void ClientSetTeleportRPC(bool bTeleportInput);
 
-	//Time Rewind
-	void execSetTimeRewind(bool bTimeRewind);
+
+	UFUNCTION(BlueprintCallable)
+		/* Executes the time rewind locally */
+		virtual void DoTimeRewind(float DeltaTime);
 
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 		void ServerSetTimeRewindRPC(bool bTimeRewind);
@@ -79,13 +77,17 @@ public:
 	UFUNCTION(Client, Reliable, BlueprintCallable)
 		void ClientSetTimeRewindRPC(bool bTimeRewind);
 
-	#pragma endregion
-
-
-};
-
+#pragma endregion
 
 #pragma region NetworkPrediction
+
+/* Method for unpacking the flags from a SavedMove */
+virtual void UpdateFromCompressedFlags(uint8 Flags) override;
+
+/* Gets the prediction data client (ShooterCharacter) */
+virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
+
+};
 
 class FNetworkPredictionData_Client_ShooterCharacter : public FNetworkPredictionData_Client_Character {
 
