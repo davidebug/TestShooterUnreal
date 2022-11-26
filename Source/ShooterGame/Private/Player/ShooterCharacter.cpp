@@ -1168,6 +1168,10 @@ void AShooterCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > &
 	DOREPLIFETIME_CONDITION(AShooterCharacter, bWantsToRun, COND_SkipOwner);
 
 	DOREPLIFETIME_CONDITION(AShooterCharacter, LastTakeHitInfo, COND_Custom);
+	DOREPLIFETIME_CONDITION(AShooterCharacter, bJetpackOn, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(AShooterCharacter, bPressedTimeRewind, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(AShooterCharacter, bPressedTeleport, COND_SkipOwner);
+
 
 	// everyone
 	DOREPLIFETIME(AShooterCharacter, CurrentWeapon);
@@ -1397,24 +1401,6 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 	/////////////// NEW ABILITIES ////////////////////
 
 
-	if (bJetpackOn && bLocallyControlled && PC) {
-		UE_LOG(LogTemp, Warning, TEXT("JETPACK"));
-	}
-	if (bPressedTimeRewind)
-		UE_LOG(LogTemp, Warning, TEXT("TIMEREW"));
-	if (bPressedTeleport)
-		UE_LOG(LogTemp, Warning, TEXT("TELEPORT"));
-
-	if (PC)
-		if (!bJetpackOn && bLocallyControlled) {
-			UE_LOG(LogTemp, Warning, TEXT("NOT JETPACK"));
-		}
-	if (!bPressedTimeRewind)
-		UE_LOG(LogTemp, Warning, TEXT("NOT TIMEREW"));
-	if (!bPressedTeleport)
-		UE_LOG(LogTemp, Warning, TEXT("NOT TELEPORT"));
-
-
 	if (!bPressedTimeRewind) {
 		UpdateSavedPositions();
 		if (IsHidden())
@@ -1427,8 +1413,9 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 
 		HidePlayerInGame();
 
-		if (NS_AbilityEffect)
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NS_AbilityEffect, GetActorLocation());
+		if (GetNetMode() != NM_DedicatedServer)
+			if (NS_AbilityEffect)
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NS_AbilityEffect, GetActorLocation());
 	}
 
 	UpdateAbilitiesCooldowns(DeltaSeconds);
@@ -1495,17 +1482,14 @@ void AShooterCharacter::OnTeleportPressed()
 		AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
 		if (MyPC && MyPC->IsGameInputAllowed())
 		{
+			//OLD IMPLEMENTATION USING RPCs
+			//if (GetLocalRole() < ROLE_Authority && IsLocallyControlled())
+			//{
+			//	ShooterCharMovement->ServerSetTeleportRPC(true);
+			//}
 
-			////////// AN IMPLEMENTATION USING RPCs ////////////////
-			if (!HasAuthority())
-				ShooterCharMovement->ServerSetTeleportRPC(true);
+			ShooterCharMovement->execSetTeleport(true);
 
-			ShooterCharMovement->SetTeleportMovement(true);
-
-			/////// IMPLEMENTATION WITHOUT DIRECT RPC
-			//ShooterCharMovement->execSetTeleport(true);
-			if (SB_TeleportSound)
-				UGameplayStatics::PlaySoundAtLocation(this, SB_TeleportSound, GetActorLocation());
 		}
 
 	}
@@ -1518,51 +1502,98 @@ bool AShooterCharacter::CheckTeleportInput() const {
 void AShooterCharacter::OnTeleportDone() {
 
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-	ShooterCharMovement->SetTeleportMovement(false);
+	ShooterCharMovement->execSetTeleport(false);
 	StartTeleportCooldown();
+}
+
+void AShooterCharacter::OnRep_Teleport() {
+	if (bPressedTeleport)
+		SimulateTeleport();
+
+}
+
+void AShooterCharacter::SimulateTeleport() {
+	if (GetNetMode() != NM_DedicatedServer)
+		if (SB_TeleportSound)
+			UGameplayStatics::PlaySoundAtLocation(this, SB_TeleportSound, GetActorLocation());
 }
 
 void AShooterCharacter::OnJetpackChange(bool newVal)
 {
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
-
-		//////////// AN IMPLEMENTATION USING RPCs ////////////////
-		if (!HasAuthority())
-			ShooterCharMovement->ServerSetJetpackRPC(newVal);
-
-		ShooterCharMovement->SetJetpackMovement(newVal);
-
-		///////// IMPLEMENTATION WITHOUT DIRECT RPC
-		//ShooterCharMovement->execSetJetpack(newVal);
+		ShooterCharMovement->execSetJetpack(newVal);
 	}
 }
 
 void AShooterCharacter::StartJetpack()
 {
-	bJetpackOn = true;
+	//OLD IMPLEMENTATION USING RPCs
+	//UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+	//if (GetLocalRole() < ROLE_Authority && IsLocallyControlled())
+	//{
+	//	ShooterCharMovement->ServerSetJetpackRPC(true);
+	//}
 
-	if (!NC_JetpackFXComponent)
+	if (!bJetpackOn)
 	{
-		ResetJetpackFXComponent();
+		bJetpackOn = true;
+
+		if (GetNetMode() != NM_DedicatedServer)
+ 			SimulateJetpack(true);
 	}
-	if (NC_JetpackFXComponent)
-		NC_JetpackFXComponent->Activate();
+
 }
 
 
 void AShooterCharacter::StopJetpack()
 {
+	//OLD IMPLEMENTATION USING RPCs
+	//UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+	//if ((GetLocalRole() < ROLE_Authority) && IsLocallyControlled())
+	//{
+	//	ShooterCharMovement->ServerSetJetpackRPC(false);
+	//}
 
-	bJetpackOn = false;
-
-	if (!NC_JetpackFXComponent)
+	if (bJetpackOn)
 	{
-		ResetJetpackFXComponent();
-	}
-	if (NC_JetpackFXComponent)
-		NC_JetpackFXComponent->Deactivate();
+		bJetpackOn = false;
 
+		if (GetNetMode() != NM_DedicatedServer)
+			SimulateJetpack(false);
+	}
+
+}
+
+
+
+void AShooterCharacter::OnRep_Jetpack() {
+	if (bJetpackOn)
+		SimulateJetpack(true);
+	else
+		SimulateJetpack(false);
+}
+
+void AShooterCharacter::SimulateJetpack(bool startSimulating) {
+
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		return;
+	}
+	if (CanJetpack()) {
+		if (!NC_JetpackFXComponent)
+			ResetJetpackFXComponent();
+
+		if (startSimulating) {
+			if (NC_JetpackFXComponent)
+				NC_JetpackFXComponent->Activate();
+		}
+		else {
+
+			if (NC_JetpackFXComponent)
+				NC_JetpackFXComponent->Deactivate();
+		}
+	}
 }
 
 bool AShooterCharacter::CanJetpack() {
@@ -1575,14 +1606,8 @@ void AShooterCharacter::OnTimeRewindStart()
 		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 		if (ShooterCharMovement) {
 
-			//////////// AN IMPLEMENTATION USING RPCs ////////////////
-			if (!HasAuthority())
-				ShooterCharMovement->ServerSetTimeRewindRPC(true);
+			ShooterCharMovement->execSetTimeRewind(true);
 
-			ShooterCharMovement->SetTimeRewindMovement(true);
-
-			///////// IMPLEMENTATION WITHOUT DIRECT RPC
-			//ShooterCharMovement->execSetTimeRewind(true);
 		}
 	}
 
@@ -1590,30 +1615,30 @@ void AShooterCharacter::OnTimeRewindStart()
 
 void AShooterCharacter::SetTimeRewind(bool timeRewind) {
 
+	//OLD IMPLEMENTATION USING RPCs
+	//if (GetLocalRole() < ROLE_Authority && IsLocallyControlled())
+	//{
+	//	ShooterCharMovement->ServerSetTimeRewindRPC(true);
+	//}
+
 	bPressedTimeRewind = timeRewind;
 	if (!timeRewind)
 		StartTimeRewindCooldown();
-	else
-		if (SB_TimeRewindSound)
-			UGameplayStatics::PlaySoundAtLocation(this, SB_TimeRewindSound, GetActorLocation(), 2.0f, 2.0f);
+	else {
+		if (GetNetMode() != NM_DedicatedServer)
+			if (SB_TimeRewindSound)
+				UGameplayStatics::PlaySoundAtLocation(this, SB_TimeRewindSound, GetActorLocation(), 2.0f, 2.0f);
+	}
 
 }
+
 
 void AShooterCharacter::OnTimeRewindStop()
 {
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	if (ShooterCharMovement) {
-
-
-		//////////// AN IMPLEMENTATION USING RPCs ////////////////
-		if (!HasAuthority())
-			ShooterCharMovement->ServerSetTimeRewindRPC(false);
-
-		ShooterCharMovement->SetTimeRewindMovement(false);
-
-		//ShooterCharMovement->execSetTimeRewind(false);
+		ShooterCharMovement->execSetTimeRewind(false);
 	}
-
 	ShowPlayerInGame();
 }
 
@@ -1625,9 +1650,6 @@ bool AShooterCharacter::IsTimeRewinding() const
 
 void AShooterCharacter::UpdateSavedPositions()
 {
-	// Updates Saved Positions Array every interval
-	// The interval determines the Speed of the Ability
-
 	if (NotSavedPositions >= SavedPositionsInterval) {
 		SavedPositionsArray.Add(GetActorLocation());
 		if (SavedPositionsArray.Num() > MaxPositionsSaved) {
@@ -1681,7 +1703,7 @@ FVector AShooterCharacter::PopLastPositionSaved()
 void AShooterCharacter::UpdateJetpackSound() {
 
 	if (bJetpackOn) {
-		//Sound should not be handled here but it's needed to make the "jetpack" effect
+		//Sound should not be handled here but it's needed to make the repetition effect
 		if (SB_JetpackSound)
 			UGameplayStatics::PlaySoundAtLocation(this, SB_JetpackSound, GetActorLocation());
 	}

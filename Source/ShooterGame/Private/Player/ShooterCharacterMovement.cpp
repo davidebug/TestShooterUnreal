@@ -108,9 +108,8 @@ void UShooterCharacterMovement::execSetJetpack(bool bJetpackOn)
 			ShooterCharacterOwner->StopJetpack();
 		}
 	}
+
 }
-
-
 
 ///////////////////////////////////////////
 // TimeRewind Implementation
@@ -151,68 +150,11 @@ void UShooterCharacterMovement::execSetTimeRewind(bool bTimeRewind)
 
 #pragma region Networking
 
-void UShooterCharacterMovement::SetTimeRewindMovement(bool bTimeRewind)
-{
-	execSetTimeRewind(bTimeRewind);
+#pragma region Abilities RPCs(old)
 
-	if (!GetOwner() || !GetPawnOwner())
-		return;
-
-	if (!GetOwner()->HasAuthority() && GetPawnOwner()->IsLocallyControlled())
-	{
-		ServerSetTimeRewindRPC(bTimeRewind);
-	}
-	else if (GetOwner()->HasAuthority() && !GetPawnOwner()->IsLocallyControlled())
-	{
-		ClientSetTimeRewindRPC(bTimeRewind);
-	}
-}
-
-void UShooterCharacterMovement::SetJetpackMovement(bool bJetpackOn)
-{
-
-	execSetJetpack(bJetpackOn);
-
-	if (!GetOwner() || !GetPawnOwner())
-		return;
-
-	if (!GetOwner()->HasAuthority() && GetPawnOwner()->IsLocallyControlled())
-	{
-		ServerSetJetpackRPC(bJetpackOn);
-	}
-	else if (GetOwner()->HasAuthority() && !GetPawnOwner()->IsLocallyControlled())
-	{
-		ClientSetJetpackRPC(bJetpackOn);
-	}
-}
-
-void UShooterCharacterMovement::SetTeleportMovement(bool bTeleportInput)
-{
-
-	execSetTeleport(bTeleportInput);
-
-	if (!GetOwner() || !GetPawnOwner())
-		return;
-
-	if (!GetOwner()->HasAuthority() && GetPawnOwner()->IsLocallyControlled())
-	{
-		ServerSetTeleportRPC(bTeleportInput);
-	}
-	else if (GetOwner()->HasAuthority() && !GetPawnOwner()->IsLocallyControlled())
-	{
-		ClientSetTeleportRPC(bTeleportInput);
-	}
-}
-
-#pragma region Abilities RPCs
+///// First implementation of networking through RPCs
 
 /// JETPACK RPCs ////
-
-
-void UShooterCharacterMovement::ClientSetJetpackRPC_Implementation(bool bJetpackOn)
-{
-	execSetJetpack(bJetpackOn);
-}
 
 bool UShooterCharacterMovement::ServerSetJetpackRPC_Validate(bool bJetpackOn)
 {
@@ -226,10 +168,6 @@ void UShooterCharacterMovement::ServerSetJetpackRPC_Implementation(bool bJetpack
 
 /// TELEPORT RPCs ///
 
-void UShooterCharacterMovement::ClientSetTeleportRPC_Implementation(bool bTeleportInput)
-{
-	execSetTeleport(bTeleportInput);
-}
 
 bool UShooterCharacterMovement::ServerSetTeleportRPC_Validate(bool bTeleportInput)
 {
@@ -242,11 +180,6 @@ void UShooterCharacterMovement::ServerSetTeleportRPC_Implementation(bool bTelepo
 }
 
 /// TIMEREWIND RPCs ///
-
-void UShooterCharacterMovement::ClientSetTimeRewindRPC_Implementation(bool bTimeRewind)
-{
-	execSetTimeRewind(bTimeRewind);
-}
 
 bool UShooterCharacterMovement::ServerSetTimeRewindRPC_Validate(bool bTimeRewind)
 {
@@ -269,6 +202,7 @@ void UShooterCharacterMovement::ServerSetTimeRewindRPC_Implementation(bool bTime
 
 //////////////////////////////////////////
 // UNPACKING Method
+// NEW IMPLEMENTATION USING ONLY COMPRESSED FLAGS UNPACKING
 
 void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 {
@@ -288,11 +222,11 @@ void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 
 	if (CharacterOwner->GetLocalRole() == ROLE_Authority)
 	{
-
-		if (bPressedTeleport) {
-			execSetTeleport(bPressedTeleport);
-			ShooterCharacter->OnTeleportDone();
-		}
+		if(bPressedTeleport != ShooterCharacter->bPressedTeleport)
+			if (bPressedTeleport) {
+				execSetTeleport(bPressedTeleport);
+				ShooterCharacter->OnTeleportDone();
+			}
 
 		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
 			execSetJetpack(bJetpackOn);

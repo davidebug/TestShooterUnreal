@@ -17,65 +17,42 @@ class UShooterCharacterMovement : public UCharacterMovementComponent
 public:
 
 #pragma region NewAbilitiesImplementation
-	UFUNCTION(BlueprintCallable)
-		/* Executes the jetpack locally */
-		virtual bool DoJetpack();
 
-	//Jetpack
+	/* Computes the Jetpack locally */
+	virtual bool DoJetpack();
+
+	UFUNCTION(BlueprintCallable)
+	/* Sets the Jetpack and Starts/Stops it both on server and on client*/
 	void execSetJetpack(bool bJetpackOn);
 
+	/* Computes the Teleport locally */
+	virtual bool DoTeleport();
 
 	UFUNCTION(BlueprintCallable)
-		/* Executes the teleport locally */
-		virtual bool DoTeleport();
-
-	//Teleport
+	/* Sets the Teleport and executes it both on server and on client*/
 	void execSetTeleport(bool bTeleportInput);
 
 
-	UFUNCTION(BlueprintCallable)
-		/* Sets the TimeRewind movement values */
-		virtual void SetTimeRewindMovement(bool bTimeRewind);
+	/* Computes the time rewind locally */
+	virtual void DoTimeRewind(float DeltaTime);
 
-	//Time Rewind
+	UFUNCTION(BlueprintCallable)
+	/* Sets the TimeRewind and executes it both on server and on client */
 	void execSetTimeRewind(bool bTimeRewind);
 
 #pragma endregion
 
 #pragma region Networking
 
-	UFUNCTION(BlueprintCallable)
-		/* Sets the Jetpack values */
-		void SetJetpackMovement(bool bJetpackOn);
 
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 		void ServerSetJetpackRPC(bool bJetpackOn);
 
-	UFUNCTION(Client, Reliable, BlueprintCallable)
-		void ClientSetJetpackRPC(bool bJetpackOn);
-
-
-
-	UFUNCTION(BlueprintCallable)
-		/* Sets the Jetpack values */
-		void SetTeleportMovement(bool bTeleportInput);
-
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 		void ServerSetTeleportRPC(bool bTeleportInput);
 
-	UFUNCTION(Client, Reliable, BlueprintCallable)
-		void ClientSetTeleportRPC(bool bTeleportInput);
-
-
-	UFUNCTION(BlueprintCallable)
-		/* Executes the time rewind locally */
-		virtual void DoTimeRewind(float DeltaTime);
-
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 		void ServerSetTimeRewindRPC(bool bTimeRewind);
-
-	UFUNCTION(Client, Reliable, BlueprintCallable)
-		void ClientSetTimeRewindRPC(bool bTimeRewind);
 
 #pragma endregion
 
