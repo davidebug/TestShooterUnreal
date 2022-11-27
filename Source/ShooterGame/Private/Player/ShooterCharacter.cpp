@@ -1521,7 +1521,7 @@ void AShooterCharacter::OnRep_Teleport() {
 }
 
 void AShooterCharacter::SimulateTeleport() {
-	if (GetLocalRole() == ROLE_Authority)
+	if (GetNetMode() == NM_DedicatedServer)
 	{
 		return;
 	}
@@ -1593,7 +1593,7 @@ void AShooterCharacter::OnRep_Jetpack() {
 
 void AShooterCharacter::SimulateJetpack(bool startSimulating) {
 
-	if (GetLocalRole() == ROLE_Authority)
+	if (GetNetMode() == NM_DedicatedServer)
 	{
 		return;
 	}
