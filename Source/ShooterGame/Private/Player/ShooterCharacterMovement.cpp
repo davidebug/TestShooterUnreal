@@ -68,6 +68,10 @@ void UShooterCharacterMovement::execSetTeleport(bool bTeleportInput)
 		ShooterCharacterOwner->bPressedTeleport = bTeleportInput;
 		if (bTeleportInput) {
 			DoTeleport();
+
+			if (ShooterCharacterOwner->HasAuthority())
+				ShooterCharacterOwner->OnTeleportDone();
+
 		}
 
 	}
@@ -118,11 +122,11 @@ void UShooterCharacterMovement::DoTimeRewind(float DeltaTime)
 {
 	AShooterCharacter* ShooterCharacterOwner = Cast<AShooterCharacter>(PawnOwner);
 	FVector NewPosition = ShooterCharacterOwner->PopLastPositionSaved();
-	FVector EndingPosition = FVector(0,0,0);
-	
-	if(NewPosition != EndingPosition){
+	FVector EndingPosition = FVector(0, 0, 0);
+
+	if (NewPosition != EndingPosition) {
 		FRotator Orientation = ShooterCharacterOwner->GetActorRotation();
- 		ShooterCharacterOwner->SetActorLocationAndRotation(NewPosition,Orientation);
+		ShooterCharacterOwner->SetActorLocationAndRotation(NewPosition, Orientation);
 	}
 	else
 		ShooterCharacterOwner->OnTimeRewindStop();
@@ -147,8 +151,6 @@ void UShooterCharacterMovement::execSetTimeRewind(bool bTimeRewind)
 
 
 #pragma endregion
-
-#pragma region Networking
 
 #pragma region Abilities RPCs(old)
 
@@ -195,7 +197,6 @@ void UShooterCharacterMovement::ServerSetTimeRewindRPC_Implementation(bool bTime
 
 #pragma endregion
 
-#pragma endregion
 
 #pragma region NetworkPrediction
 
@@ -222,11 +223,9 @@ void UShooterCharacterMovement::UpdateFromCompressedFlags(uint8 Flags)
 
 	if (CharacterOwner->GetLocalRole() == ROLE_Authority)
 	{
-		if(bPressedTeleport != ShooterCharacter->bPressedTeleport)
-			if (bPressedTeleport) {
-				execSetTeleport(bPressedTeleport);
-				ShooterCharacter->OnTeleportDone();
-			}
+		if (ShooterCharacter->bPressedTeleport != bPressedTeleport) {
+			execSetTeleport(bPressedTeleport);
+		}
 
 		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
 			execSetJetpack(bJetpackOn);
@@ -306,19 +305,19 @@ void FSavedMove_ShooterCharacter::PrepMoveFor(ACharacter* Character)
 	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(Character);
 	UShooterCharacterMovement* ShooterCharacterMovement = Cast<UShooterCharacterMovement>(Character->GetCharacterMovement());
 	if (ShooterCharacter)
-	{		
-				if (bPressedTeleport) {
-					ShooterCharacterMovement->DoTeleport();
-				}
+	{
+		if (ShooterCharacter->bPressedTeleport != bPressedTeleport) {
+			ShooterCharacterMovement->execSetTeleport(bPressedTeleport);
+		}
 
-				if (ShooterCharacter->bJetpackOn != bJetpackOn) {
-					ShooterCharacterMovement->execSetJetpack(bJetpackOn);
-				}
+		if (ShooterCharacter->bJetpackOn != bJetpackOn) {
+			ShooterCharacterMovement->execSetJetpack(bJetpackOn);
+		}
 
 
-				if (ShooterCharacter->bPressedTimeRewind != bPressedTimeRewind) {
-						ShooterCharacterMovement->execSetTimeRewind(bPressedTimeRewind);
-				}
+		if (ShooterCharacter->bPressedTimeRewind != bPressedTimeRewind) {
+			ShooterCharacterMovement->execSetTimeRewind(bPressedTimeRewind);
+		}
 	}
 }
 

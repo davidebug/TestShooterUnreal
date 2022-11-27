@@ -79,7 +79,7 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	JetpackVelocity = 500.0f;
 	bPressedTeleport = false;
 	bPressedTimeRewind = false;
-	MaxPositionsSaved = 50;
+	MaxPositionsSaved = 70;
 	SavedPositionsInterval = 5;
 	NotSavedPositions = 0;
 	TeleportCooldown = 6;
@@ -128,7 +128,7 @@ void AShooterCharacter::PostInitializeComponents()
 		ResetJetpackFXComponent();
 
 	}
-	
+
 }
 
 void  AShooterCharacter::ResetJetpackFXComponent() {
@@ -138,7 +138,7 @@ void  AShooterCharacter::ResetJetpackFXComponent() {
 
 		UNiagaraComponent* tmp =
 			UNiagaraFunctionLibrary::SpawnSystemAttached(NS_JetpackFX, JetpackComponent, NAME_None, FVector(0.f), FRotator(0.f),
-				EAttachLocation::Type::KeepRelativeOffset, false, false,ENCPoolMethod::None,false);
+				EAttachLocation::Type::KeepRelativeOffset, false, false, ENCPoolMethod::None, false);
 
 		NC_JetpackFXComponent = tmp;
 
@@ -149,7 +149,7 @@ void AShooterCharacter::BeginPlay() {
 
 	Super::BeginPlay();
 
-	
+
 
 }
 
@@ -398,7 +398,7 @@ void AShooterCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& 
 		AShooterPlayerController* PC = Cast<AShooterPlayerController>(Controller);
 		if (PC && DamageEvent.DamageTypeClass)
 		{
-			UShooterDamageType *DamageType = Cast<UShooterDamageType>(DamageEvent.DamageTypeClass->GetDefaultObject());
+			UShooterDamageType* DamageType = Cast<UShooterDamageType>(DamageEvent.DamageTypeClass->GetDefaultObject());
 			if (DamageType && DamageType->KilledForceFeedback && PC->IsVibrationEnabled())
 			{
 				FForceFeedbackParameters FFParams;
@@ -477,7 +477,7 @@ void AShooterCharacter::PlayHit(float DamageTaken, struct FDamageEvent const& Da
 		AShooterPlayerController* PC = Cast<AShooterPlayerController>(Controller);
 		if (PC && DamageEvent.DamageTypeClass)
 		{
-			UShooterDamageType *DamageType = Cast<UShooterDamageType>(DamageEvent.DamageTypeClass->GetDefaultObject());
+			UShooterDamageType* DamageType = Cast<UShooterDamageType>(DamageEvent.DamageTypeClass->GetDefaultObject());
 			if (DamageType && DamageType->HitForceFeedback && PC->IsVibrationEnabled())
 			{
 				FForceFeedbackParameters FFParams;
@@ -1133,6 +1133,8 @@ void AShooterCharacter::OnStartJump()
 		{
 			OnJetpackChange(true);
 		}
+		else if (!CanJetpack() && bJetpackOn)
+			OnJetpackChange(false);
 	}
 }
 
@@ -1142,13 +1144,13 @@ void AShooterCharacter::OnStopJump()
 		OnJetpackChange(false);
 	}
 	bPressedJump = false;
- 	StopJumping();
+	StopJumping();
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Replication
 
-void AShooterCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
+void AShooterCharacter::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
 {
 	Super::PreReplication(ChangedPropertyTracker);
 
@@ -1156,7 +1158,7 @@ void AShooterCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPrope
 	DOREPLIFETIME_ACTIVE_OVERRIDE(AShooterCharacter, LastTakeHitInfo, GetWorld() && GetWorld()->GetTimeSeconds() < LastTakeHitTimeTimeout);
 }
 
-void AShooterCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+void AShooterCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
@@ -1376,7 +1378,7 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 		}
 
 		UpdateRunSounds();
-		UpdateJetpackSound();
+
 	}
 
 	const APlayerController* PC = Cast<APlayerController>(GetController());
@@ -1415,7 +1417,7 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 
 		if (GetNetMode() != NM_DedicatedServer)
 			if (NS_AbilityEffect)
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NS_AbilityEffect, GetActorLocation());
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, NS_AbilityEffect, GetActorLocation());
 	}
 
 	UpdateAbilitiesCooldowns(DeltaSeconds);
@@ -1423,7 +1425,7 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 
 #pragma endregion
 
-#pragma region NewAbilitiesFunctions
+#pragma region NewAbilities
 
 // REDEFINE JUMP INPUT FOR JETPACK AND OTHER
 void AShooterCharacter::CheckJumpInput(float DeltaTime)
@@ -1440,6 +1442,10 @@ void AShooterCharacter::CheckJumpInput(float DeltaTime)
 
 			ShooterCharacterMovement->DoJetpack();
 			JetpackCurrentEnergy--;
+		}
+		else if (bJetpackOn && !CanJetpack())
+		{
+			OnJetpackChange(false);
 		}
 		else if (bPressedJump) {
 
@@ -1489,6 +1495,7 @@ void AShooterCharacter::OnTeleportPressed()
 			//}
 
 			ShooterCharMovement->execSetTeleport(true);
+			SimulateTeleport();
 
 		}
 
@@ -1503,19 +1510,29 @@ void AShooterCharacter::OnTeleportDone() {
 
 	UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
 	ShooterCharMovement->execSetTeleport(false);
+	SimulateTeleport();
 	StartTeleportCooldown();
+
 }
 
 void AShooterCharacter::OnRep_Teleport() {
-	if (bPressedTeleport)
-		SimulateTeleport();
 
+	SimulateTeleport();
 }
 
 void AShooterCharacter::SimulateTeleport() {
-	if (GetNetMode() != NM_DedicatedServer)
-		if (SB_TeleportSound)
-			UGameplayStatics::PlaySoundAtLocation(this, SB_TeleportSound, GetActorLocation());
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		return;
+	}
+
+	if (SB_TeleportSound)
+		UGameplayStatics::PlaySoundAtLocation(this, SB_TeleportSound, GetActorLocation());
+
+	if (NS_AbilityEffect)
+		UNiagaraFunctionLibrary::SpawnSystemAttached(NS_AbilityEffect, GetWeapon()->GetWeaponMesh(), NAME_None, FVector(0.f), FRotator(0.f),
+			EAttachLocation::Type::KeepRelativeOffset, true, true, ENCPoolMethod::None, false);
+
 }
 
 void AShooterCharacter::OnJetpackChange(bool newVal)
@@ -1540,7 +1557,7 @@ void AShooterCharacter::StartJetpack()
 		bJetpackOn = true;
 
 		if (GetNetMode() != NM_DedicatedServer)
- 			SimulateJetpack(true);
+			SimulateJetpack(true);
 	}
 
 }
@@ -1587,12 +1604,28 @@ void AShooterCharacter::SimulateJetpack(bool startSimulating) {
 		if (startSimulating) {
 			if (NC_JetpackFXComponent)
 				NC_JetpackFXComponent->Activate();
+
+			if (SB_JetpackSound) {
+				JetpackAudioComponent = UGameplayStatics::SpawnSoundAttached(SB_JetpackSound, GetRootComponent(),
+					NAME_None, FVector(0, 0, 0), EAttachLocation::KeepRelativeOffset, false, 10.0f, -3.0f);
+				JetpackAudioComponent->Play();
+			}
 		}
 		else {
 
 			if (NC_JetpackFXComponent)
 				NC_JetpackFXComponent->Deactivate();
+
+			if (JetpackAudioComponent)
+				JetpackAudioComponent->Stop();
 		}
+	}
+	else {
+		if (NC_JetpackFXComponent)
+			NC_JetpackFXComponent->Deactivate();
+
+		if (JetpackAudioComponent)
+			JetpackAudioComponent->Stop();
 	}
 }
 
@@ -1602,12 +1635,15 @@ bool AShooterCharacter::CanJetpack() {
 
 void AShooterCharacter::OnTimeRewindStart()
 {
-	if (CanTimeRewind()) {
-		UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
-		if (ShooterCharMovement) {
+	AShooterPlayerController* MyPC = Cast<AShooterPlayerController>(Controller);
+	if (MyPC && MyPC->IsGameInputAllowed())
+	{
+		if (CanTimeRewind()) {
+			UShooterCharacterMovement* ShooterCharMovement = Cast<UShooterCharacterMovement>(GetCharacterMovement());
+			if (ShooterCharMovement) {
+				ShooterCharMovement->execSetTimeRewind(true);
 
-			ShooterCharMovement->execSetTimeRewind(true);
-
+			}
 		}
 	}
 
@@ -1698,16 +1734,6 @@ FVector AShooterCharacter::PopLastPositionSaved()
 		return SavedPositionsArray.Pop();
 
 	return FVector(0, 0, 0);
-}
-
-void AShooterCharacter::UpdateJetpackSound() {
-
-	if (bJetpackOn) {
-		//Sound should not be handled here but it's needed to make the repetition effect
-		if (SB_JetpackSound)
-			UGameplayStatics::PlaySoundAtLocation(this, SB_JetpackSound, GetActorLocation());
-	}
-
 }
 
 void AShooterCharacter::HidePlayerInGame() {

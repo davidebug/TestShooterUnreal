@@ -22,27 +22,27 @@ public:
 	virtual bool DoJetpack();
 
 	UFUNCTION(BlueprintCallable)
-	/* Sets the Jetpack and Starts/Stops it both on server and on client*/
-	void execSetJetpack(bool bJetpackOn);
+		/* Sets the Jetpack and Starts/Stops it both on server and on client*/
+		void execSetJetpack(bool bJetpackOn);
 
 	/* Computes the Teleport locally */
 	virtual bool DoTeleport();
 
 	UFUNCTION(BlueprintCallable)
-	/* Sets the Teleport and executes it both on server and on client*/
-	void execSetTeleport(bool bTeleportInput);
+		/* Sets the Teleport and executes it both on server and on client*/
+		void execSetTeleport(bool bTeleportInput);
 
 
 	/* Computes the time rewind locally */
 	virtual void DoTimeRewind(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable)
-	/* Sets the TimeRewind and executes it both on server and on client */
-	void execSetTimeRewind(bool bTimeRewind);
+		/* Sets the TimeRewind and executes it both on server and on client */
+		void execSetTimeRewind(bool bTimeRewind);
 
 #pragma endregion
 
-#pragma region Networking
+#pragma region AbilitiesRPCs(old)
 
 
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
@@ -58,11 +58,11 @@ public:
 
 #pragma region NetworkPrediction
 
-/* Method for unpacking the flags from a SavedMove */
-virtual void UpdateFromCompressedFlags(uint8 Flags) override;
+	/* Method for unpacking the flags from a SavedMove */
+	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
 
-/* Gets the prediction data client (ShooterCharacter) */
-virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
+	/* Gets the prediction data client (ShooterCharacter) */
+	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 
 };
 
@@ -82,7 +82,7 @@ public:
 
 
 
-class FSavedMove_ShooterCharacter : public FSavedMove_Character{
+class FSavedMove_ShooterCharacter : public FSavedMove_Character {
 
 public:
 
@@ -90,13 +90,13 @@ public:
 
 	/* Sets and saves a new move for a possible correction */
 	virtual void SetMoveFor(ACharacter* C, float InDeltaTime, FVector const& NewAccel, class FNetworkPredictionData_Client_Character& ClientData) override;
-	
+
 	/* Clears the savedmove */
 	virtual void Clear() override;
-	
+
 	/* Returns a byte with the abilities of the character */
 	virtual uint8 GetCompressedFlags() const override;
-	
+
 	/* Method to check if the move can be replicated without changing behavior */
 	virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Character, float MaxDelta) const override;
 

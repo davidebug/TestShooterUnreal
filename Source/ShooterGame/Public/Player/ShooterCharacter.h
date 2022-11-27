@@ -520,8 +520,8 @@ public:
 	/** Sets the teleport as Done */
 	void OnTeleportDone();
 
-	/** Function called to handle teleport changes on other clients*/
 	UFUNCTION()
+	/** Function called to handle teleport changes on other clients*/
 	void OnRep_Teleport();
 
 	/** Handles Teleport Sound and Fx */
@@ -538,9 +538,9 @@ public:
 
 	/** Stops jetpack */
 	void StopJetpack();
-
-	/** Function called to handle jetpack changes on other clients*/
+	
 	UFUNCTION()
+	/** Function called to handle jetpack changes on other clients*/
 	void OnRep_Jetpack();
 
 	/** Checks if there is enough energy for jetpacking */
@@ -577,9 +577,6 @@ public:
 	/** Sets time rewind ability ON or OFF */
 	void SetTimeRewind(bool timeRewind);
 
-	/** Updates Jetpack Sound */
-	void UpdateJetpackSound();
-
 	/** Init Jetpack FX */
 	void ResetJetpackFXComponent();
 
@@ -600,15 +597,15 @@ public:
 public:
 	
 	UPROPERTY(BlueprintReadOnly,Transient, ReplicatedUsing = OnRep_Teleport, Category = Character)
-		/** Tells if teleport has been triggered or not */
+		/** Tells if teleport has been triggered or not (Replicated)*/
 		uint32 bPressedTeleport : 1;
 	
 	UPROPERTY(BlueprintReadOnly, Transient, Replicated, Category = Character)
-		/** Tells if Time Rewind has been triggered and is active or not */
+		/** Tells if Time Rewind has been triggered and is active or not (Replicated)*/
 		uint32 bPressedTimeRewind : 1;
 
 	UPROPERTY(BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_Jetpack, Category = Character)
-		/** Tells if Jetpack is active or not */
+		/** Tells if Jetpack is active or not (Replicated)*/
 		uint32 bJetpackOn : 1;
 
 
@@ -676,6 +673,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Jetpack Sound */
 		USoundBase* SB_JetpackSound;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		/** Jetpack Sound */
+		UAudioComponent* JetpackAudioComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Teleport Sound */
