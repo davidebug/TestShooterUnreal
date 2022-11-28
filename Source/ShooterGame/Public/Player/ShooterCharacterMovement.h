@@ -58,6 +58,7 @@ public:
 
 #pragma region NetworkPrediction
 
+protected:
 	/* Method for unpacking the flags from a SavedMove */
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
 

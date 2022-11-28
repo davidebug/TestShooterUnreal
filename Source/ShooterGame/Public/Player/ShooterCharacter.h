@@ -19,7 +19,7 @@ class AShooterCharacter : public ACharacter
 
 #pragma region ShooterCharacterBase
 
-	virtual void BeginDestroy() override;
+		virtual void BeginDestroy() override;
 
 	virtual void BeginPlay() override;
 
@@ -57,7 +57,7 @@ class AShooterCharacter : public ACharacter
 
 	/** get aim offsets */
 	UFUNCTION(BlueprintCallable, Category = "Game|Weapon")
-	FRotator GetAimOffsets() const;
+		FRotator GetAimOffsets() const;
 
 	/**
 	* Check if pawn is enemy if given controller.
@@ -220,7 +220,7 @@ class AShooterCharacter : public ACharacter
 
 	/** get currently equipped weapon */
 	UFUNCTION(BlueprintCallable, Category = "Game|Weapon")
-	class AShooterWeapon* GetWeapon() const;
+		class AShooterWeapon* GetWeapon() const;
 
 	/** Global notification when a character equips a weapon. Needed for replication graph. */
 	SHOOTERGAME_API static FOnShooterCharacterEquipWeapon NotifyEquipWeapon;
@@ -243,27 +243,27 @@ class AShooterCharacter : public ACharacter
 
 	/** get weapon taget modifier speed	*/
 	UFUNCTION(BlueprintCallable, Category = "Game|Weapon")
-	float GetTargetingSpeedModifier() const;
+		float GetTargetingSpeedModifier() const;
 
 	/** get targeting state */
 	UFUNCTION(BlueprintCallable, Category = "Game|Weapon")
-	bool IsTargeting() const;
+		bool IsTargeting() const;
 
 	/** get firing state */
 	UFUNCTION(BlueprintCallable, Category = "Game|Weapon")
-	bool IsFiring() const;
+		bool IsFiring() const;
 
 	/** get the modifier value for running speed */
 	UFUNCTION(BlueprintCallable, Category = Pawn)
-	float GetRunningSpeedModifier() const;
+		float GetRunningSpeedModifier() const;
 
 	/** get running state */
 	UFUNCTION(BlueprintCallable, Category = Pawn)
-	bool IsRunning() const;
+		bool IsRunning() const;
 
 	/** get camera view type */
 	UFUNCTION(BlueprintCallable, Category = Mesh)
-	virtual bool IsFirstPerson() const;
+		virtual bool IsFirstPerson() const;
 
 	/** get max health */
 	int32 GetMaxHealth() const;
@@ -288,47 +288,47 @@ private:
 
 	/** pawn mesh: 1st person view */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-	USkeletalMeshComponent* Mesh1P;
+		USkeletalMeshComponent* Mesh1P;
 protected:
 
 	/** socket or bone name for attaching weapon mesh */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	FName WeaponAttachPoint;
+		FName WeaponAttachPoint;
 
 	/** default inventory list */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	TArray<TSubclassOf<class AShooterWeapon> > DefaultInventoryClasses;
+		TArray<TSubclassOf<class AShooterWeapon> > DefaultInventoryClasses;
 
 	/** weapons in inventory */
 	UPROPERTY(Transient, Replicated)
-	TArray<class AShooterWeapon*> Inventory;
+		TArray<class AShooterWeapon*> Inventory;
 
 	/** currently equipped weapon */
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_CurrentWeapon)
-	class AShooterWeapon* CurrentWeapon;
+		class AShooterWeapon* CurrentWeapon;
 
 	/** Replicate where this pawn was last hit and damaged */
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_LastTakeHitInfo)
-	struct FTakeHitInfo LastTakeHitInfo;
+		struct FTakeHitInfo LastTakeHitInfo;
 
 	/** Time at which point the last take hit info for the actor times out and won't be replicated; Used to stop join-in-progress effects all over the screen */
 	float LastTakeHitTimeTimeout;
 
 	/** modifier for max movement speed */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	float TargetingSpeedModifier;
+		float TargetingSpeedModifier;
 
 	/** current targeting state */
 	UPROPERTY(Transient, Replicated)
-	uint8 bIsTargeting : 1;
+		uint8 bIsTargeting : 1;
 
 	/** modifier for max movement speed */
 	UPROPERTY(EditDefaultsOnly, Category = Pawn)
-	float RunningSpeedModifier;
+		float RunningSpeedModifier;
 
 	/** current running state */
 	UPROPERTY(Transient, Replicated)
-	uint8 bWantsToRun : 1;
+		uint8 bWantsToRun : 1;
 
 	/** from gamepad running is toggled */
 	uint8 bWantsToRunToggled : 1;
@@ -347,47 +347,47 @@ protected:
 
 	/** material instances for setting team color in mesh (3rd person view) */
 	UPROPERTY(Transient)
-	TArray<UMaterialInstanceDynamic*> MeshMIDs;
+		TArray<UMaterialInstanceDynamic*> MeshMIDs;
 
 	/** animation played on death */
 	UPROPERTY(EditDefaultsOnly, Category = Animation)
-	UAnimMontage* DeathAnim;
+		UAnimMontage* DeathAnim;
 
 	/** sound played on death, local player only */
 	UPROPERTY(EditDefaultsOnly, Category = Pawn)
-	USoundCue* DeathSound;
+		USoundCue* DeathSound;
 
 	/** effect played on respawn */
 	UPROPERTY(EditDefaultsOnly, Category = Pawn)
-	UParticleSystem* RespawnFX;
+		UParticleSystem* RespawnFX;
 
 	/** sound played on respawn */
 	UPROPERTY(EditDefaultsOnly, Category = Pawn)
-	USoundCue* RespawnSound;
+		USoundCue* RespawnSound;
 
 	/** sound played when health is low */
 	UPROPERTY(EditDefaultsOnly, Category = Pawn)
-	USoundCue* LowHealthSound;
+		USoundCue* LowHealthSound;
 
 	/** sound played when running */
 	UPROPERTY(EditDefaultsOnly, Category = Pawn)
-	USoundCue* RunLoopSound;
+		USoundCue* RunLoopSound;
 
 	/** sound played when stop running */
 	UPROPERTY(EditDefaultsOnly, Category = Pawn)
-	USoundCue* RunStopSound;
+		USoundCue* RunStopSound;
 
 	/** sound played when targeting state changes */
 	UPROPERTY(EditDefaultsOnly, Category = Pawn)
-	USoundCue* TargetingSound;
+		USoundCue* TargetingSound;
 
 	/** used to manipulate with run loop sound */
 	UPROPERTY()
-	UAudioComponent* RunLoopAC;
+		UAudioComponent* RunLoopAC;
 
 	/** hook to looped low health sound used to stop/adjust volume */
 	UPROPERTY()
-	UAudioComponent* LowHealthWarningPlayer;
+		UAudioComponent* LowHealthWarningPlayer;
 
 	/** handles sounds for running */
 	void UpdateRunSounds();
@@ -413,11 +413,11 @@ public:
 
 	/** Identifies if pawn is in its dying state */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Health)
-	uint32 bIsDying : 1;
+		uint32 bIsDying : 1;
 
 	// Current health of the Pawn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = Health)
-	float Health;
+		float Health;
 
 	////////////////////////////////////////////////////////////
 	/** Take damage, handle death */
@@ -446,7 +446,7 @@ public:
 	virtual void FellOutOfWorld(const class UDamageType& dmgType) override;
 
 	/** Called on the actor right before replication occurs */
-	virtual void PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker) override;
+	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker) override;
 
 
 
@@ -465,7 +465,7 @@ protected:
 
 	/** play hit or death on client */
 	UFUNCTION()
-	void OnRep_LastTakeHitInfo();
+		void OnRep_LastTakeHitInfo();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Inventory
@@ -475,7 +475,7 @@ protected:
 
 	/** current weapon rep handler */
 	UFUNCTION()
-	void OnRep_CurrentWeapon(class AShooterWeapon* LastWeapon);
+		void OnRep_CurrentWeapon(class AShooterWeapon* LastWeapon);
 
 	/** [server] spawns default inventory */
 	void SpawnDefaultInventory();
@@ -485,15 +485,15 @@ protected:
 
 	/** equip weapon */
 	UFUNCTION(reliable, server, WithValidation)
-	void ServerEquipWeapon(class AShooterWeapon* NewWeapon);
+		void ServerEquipWeapon(class AShooterWeapon* NewWeapon);
 
 	/** update targeting state */
 	UFUNCTION(reliable, server, WithValidation)
-	void ServerSetTargeting(bool bNewTargeting);
+		void ServerSetTargeting(bool bNewTargeting);
 
 	/** update targeting state */
 	UFUNCTION(reliable, server, WithValidation)
-	void ServerSetRunning(bool bNewRunning, bool bToggle);
+		void ServerSetRunning(bool bNewRunning, bool bToggle);
 
 	/** Builds list of points to check for pausing replication for a connection*/
 	void BuildPauseReplicationCheckPoints(TArray<FVector>& RelevancyCheckPoints);
@@ -520,10 +520,6 @@ public:
 	/** Sets the teleport as Done */
 	void OnTeleportDone();
 
-	UFUNCTION()
-	/** Function called to handle teleport changes on other clients*/
-	void OnRep_Teleport();
-
 	/** Handles Teleport Sound and Fx */
 	void SimulateTeleport();
 
@@ -538,13 +534,6 @@ public:
 
 	/** Stops jetpack */
 	void StopJetpack();
-	
-	UFUNCTION()
-	/** Function called to handle jetpack changes on other clients*/
-	void OnRep_Jetpack();
-
-	/** Checks if there is enough energy for jetpacking */
-	bool CanJetpack();
 
 	/** Time Rewind ability start */
 	void OnTimeRewindStart();
@@ -552,21 +541,14 @@ public:
 	/** Time Rewind ability is stopped */
 	void OnTimeRewindStop();
 
-	/** Updates saved positions every interval, 
-	the interval determines the speed of the ability*/
-	void UpdateSavedPositions();
+	/** Tells if time is rewinding or not */
+	bool IsTimeRewinding() const;
 
-	/** Gets the last position added in the array */
-	FVector PopLastPositionSaved();
+	/** Sets time rewind ability ON or OFF */
+	void SetTimeRewind(bool timeRewind);
 
-	/** Updates abilities cooldowns per second */
-	void UpdateAbilitiesCooldowns(float DeltaSeconds);
-
-	/** Starts the teleport cooldown */
-	void StartTeleportCooldown();
-
-	/** Starts the time rewind cooldown */
-	void StartTimeRewindCooldown();
+	/** Checks if there is enough energy for jetpacking */
+	bool CanJetpack();
 
 	/** Tells if the player can use the teleport ability*/
 	bool CanTeleport();
@@ -574,32 +556,52 @@ public:
 	/** Tells if the player can use the time rewind ability */
 	bool CanTimeRewind();
 
-	/** Sets time rewind ability ON or OFF */
-	void SetTimeRewind(bool timeRewind);
-
-	/** Init Jetpack FX */
-	void ResetJetpackFXComponent();
-
 	/** Hides Player in game */
 	void HidePlayerInGame();
 
 	/** Shows Player in game */
 	void ShowPlayerInGame();
 
-	/** Tells if time is rewinding or not */
-	UFUNCTION(BlueprintCallable, Category = Pawn)
-		bool IsTimeRewinding() const;
+	/** Starts the teleport cooldown */
+	void StartTeleportCooldown();
+
+	/** Starts the time rewind cooldown */
+	void StartTimeRewindCooldown();
+
+		/** Gets the last position added in the array */
+	FVector PopLastPositionSaved();
+
+protected:
+	/** Updates saved positions every interval,
+	the interval determines the speed of the ability*/
+	void UpdateSavedPositions();
+
+	/** Updates abilities cooldowns per second */
+	void UpdateAbilitiesCooldowns(float DeltaSeconds);
+
+	/** Init Jetpack FX */
+	void ResetJetpackFXComponent();
+
+	UFUNCTION()
+		/** Function called to handle jetpack changes on other clients*/
+		void OnRep_Jetpack();
+
+	UFUNCTION()
+		/** Function called to handle teleport changes on other clients*/
+		void OnRep_Teleport();
+
+
 
 #pragma endregion
 
 #pragma region NewAbilitiesVariables
 
 public:
-	
-	UPROPERTY(BlueprintReadOnly,Transient, ReplicatedUsing = OnRep_Teleport, Category = Character)
+
+	UPROPERTY(BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_Teleport, Category = Character)
 		/** Tells if teleport has been triggered or not (Replicated)*/
 		uint32 bPressedTeleport : 1;
-	
+
 	UPROPERTY(BlueprintReadOnly, Transient, Replicated, Category = Character)
 		/** Tells if Time Rewind has been triggered and is active or not (Replicated)*/
 		uint32 bPressedTimeRewind : 1;
@@ -612,11 +614,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Jetpack current energy pool */
 		int JetpackCurrentEnergy;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Jetpack maximum energy pool */
 		int JetpackMaxEnergy;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Jetpack velocity*/
 		float JetpackVelocity;
@@ -626,12 +628,12 @@ public:
 		float TeleportCooldown;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
-		/** Teleport Cooldown current state*/
-		float CurrentTeleportCooldown;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Time rewind max cooldown*/
 		float TimeRewindCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+		/** Teleport Cooldown current state*/
+		float CurrentTeleportCooldown;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Time rewind Cooldown current state*/
@@ -641,7 +643,6 @@ public:
 		/** Saved old positions of the character used for time rewinding*/
 		TArray<FVector> SavedPositionsArray;
 
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Maximum number of saved old positions */
 		int MaxPositionsSaved;
@@ -660,6 +661,10 @@ protected:
 		/** Jetpack FX Component*/
 		UNiagaraComponent* NC_JetpackFXComponent;
 
+	UPROPERTY(BlueprintReadOnly, Category = Character)
+		/** Jetpack Sound */
+		UAudioComponent* JetpackAudioComponent;
+
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
@@ -673,10 +678,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Jetpack Sound */
 		USoundBase* SB_JetpackSound;
-
-	UPROPERTY(BlueprintReadOnly, Category = Character)
-		/** Jetpack Sound */
-		UAudioComponent* JetpackAudioComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 		/** Teleport Sound */

@@ -79,7 +79,7 @@ AShooterCharacter::AShooterCharacter(const FObjectInitializer& ObjectInitializer
 	JetpackVelocity = 500.0f;
 	bPressedTeleport = false;
 	bPressedTimeRewind = false;
-	MaxPositionsSaved = 70;
+	MaxPositionsSaved = 60;
 	SavedPositionsInterval = 5;
 	NotSavedPositions = 0;
 	TeleportCooldown = 6;
